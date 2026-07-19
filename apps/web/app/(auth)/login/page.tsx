@@ -43,9 +43,9 @@ export default function LoginPage() {
         setSession(res.user, res.tokens.accessToken);
         router.replace('/home');
       } else {
-        // Unverified account — send them to phone verification.
+        // Unverified account — send them to phone verification with a notice.
         router.push(
-          `/verify?phone=${encodeURIComponent(res.phone)}&purpose=SIGNUP&resendIn=${res.resendIn}`,
+          `/verify?phone=${encodeURIComponent(res.phone)}&purpose=SIGNUP&resendIn=${res.resendIn}&notice=verify`,
         );
       }
     } catch (err) {

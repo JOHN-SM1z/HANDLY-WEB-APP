@@ -107,7 +107,10 @@ export class AuthService {
     this.assertNotBlocked(user.status);
 
     if (user.status === 'PENDING') {
-      const resendIn = await this.otp.issue(dto.phone, 'SIGNUP');
+      // Unverified account: bounce to phone verification instead of logging in.
+      // ensureChallenge never throws on the resend cooldown — it reuses the
+      // code already sent (or sends a fresh one) so the user isn't blocked.
+      const resendIn = await this.otp.ensureChallenge(dto.phone, 'SIGNUP');
       return { otpSent: true, phone: dto.phone, resendIn, needsVerification: true };
     }
 

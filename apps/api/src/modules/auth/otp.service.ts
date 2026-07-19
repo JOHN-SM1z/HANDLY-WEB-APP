@@ -42,6 +42,33 @@ export class OtpService {
     return OTP_RESEND_COOLDOWN_SECONDS;
   }
 
+  /**
+   * Ensure a live OTP challenge exists without surfacing rate limits as errors —
+   * used when bouncing an unverified login to phone verification. If a code was
+   * recently sent (cooldown active) it is reused and the remaining cooldown is
+   * returned; otherwise a fresh code is sent.
+   */
+  async ensureChallenge(phone: string, purpose: OtpPurpose): Promise<number> {
+    let remaining = 0;
+    try {
+      remaining = await this.redis.ttl(`otp:cooldown:${purpose}:${phone}`);
+    } catch {
+      remaining = 0; // Redis unavailable — fall through and try to (re)issue.
+    }
+    if (remaining > 0) return remaining;
+
+    try {
+      return await this.issue(phone, purpose);
+    } catch (err) {
+      // A limit was hit between the TTL check and issue — a valid code already
+      // exists, so bounce to verification rather than erroring.
+      if (err instanceof BadRequestException) {
+        return this.config.env.OTP_RESEND_COOLDOWN_SECONDS;
+      }
+      throw err;
+    }
+  }
+
   /** Verify a code; consumes it on success, increments attempts on failure. */
   async verify(phone: string, code: string, purpose: OtpPurpose): Promise<void> {
     const otp = await this.prisma.otpCode.findFirst({

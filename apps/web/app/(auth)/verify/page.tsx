@@ -19,6 +19,7 @@ function VerifyInner() {
 
   const phone = params.get('phone') ?? '';
   const purpose = (params.get('purpose') as OtpPurpose) ?? 'SIGNUP';
+  const notice = params.get('notice');
 
   const [code, setCode] = useState('');
   const [seconds, setSeconds] = useState(Number(params.get('resendIn') ?? 45));
@@ -82,6 +83,9 @@ function VerifyInner() {
       <AuthHeader title="SMS tasdiqlash" subtitle={`${maskedPhone} raqamiga 6 xonali kod yuborildi`} />
 
       <div className="flex flex-col gap-5 rounded-xl border border-border-tertiary bg-surface p-5 shadow-card">
+        {notice === 'verify' && (
+          <Alert variant="info">Iltimos, avval telefon raqamingizni tasdiqlang</Alert>
+        )}
         {error && <Alert>{error}</Alert>}
 
         <OtpInput value={code} onChange={setCode} autoFocus disabled={loading} />
