@@ -1,0 +1,278 @@
+// Handly — Prisma schema (Milestone 1: auth, sessions, profiles, catalog).
+// Later milestones extend this (orders, dispatch, payments, wallets, trust, …).
+// Geo columns use lat/lng decimals for now; PostGIS geography + GIST indexes
+// are introduced in Milestone 3 when dispatch needs radius queries.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────── Enums ───────────────────────────
+enum Role {
+  CUSTOMER
+  MASTER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum Locale {
+  uz
+  ru
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationProvider {
+  MYID
+  MANUAL
+}
+
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+  RESET
+}
+
+enum MasterMediaKind {
+  CERTIFICATION
+  PORTFOLIO
+}
+
+enum AvailabilityKind {
+  BUSY
+  BOOKED
+}
+
+enum AvailabilitySource {
+  MANUAL
+  ORDER
+  DIDOX
+}
+
+enum DevicePlatform {
+  WEB
+  ANDROID
+  IOS
+}
+
+// ─────────────────────────── Identity ───────────────────────────
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  phone        String     @unique
+  passwordHash String
+  role         Role       @default(CUSTOMER)
+  status       UserStatus @default(PENDING)
+  referralCode String     @unique
+  locale       Locale     @default(uz)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  customerProfile CustomerProfile?
+  masterProfile   MasterProfile?
+  sessions        Session[]
+  devices         Device[]
+  addresses       Address[]
+
+  @@map("users")
+}
+
+model CustomerProfile {
+  userId    String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName  String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customer_profiles")
+}
+
+model MasterProfile {
+  userId             String             @id @db.Uuid
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName           String?
+  experienceYears    Int                @default(0)
+  bio                String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  trustTier          Int                @default(0)
+  ratingAvg          Decimal            @default(0) @db.Decimal(3, 2)
+  jobsDone           Int                @default(0)
+  // PINFL (JShShIR) stored as AES-256-GCM ciphertext, never plaintext.
+  pinflEncrypted     String?
+  isSelfEmployed     Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  skills        MasterSkill[]
+  media         MasterMedia[]
+  serviceAreas  ServiceArea[]
+  availability  AvailabilitySlot[]
+  verifications Verification[]
+
+  @@map("master_profiles")
+}
+
+// ─────────────────────────── Catalog ───────────────────────────
+model ServiceCategory {
+  id               String        @id @default(uuid()) @db.Uuid
+  slug             String        @unique
+  nameUz           String
+  nameRu           String
+  basePriceMin     Int
+  basePriceMax     Int
+  warrantyEligible Boolean       @default(true)
+  active           Boolean       @default(true)
+  iconKey          String?
+  sortOrder        Int           @default(0)
+  createdAt        DateTime      @default(now())
+
+  masterSkills MasterSkill[]
+
+  @@map("service_categories")
+}
+
+model MasterSkill {
+  id         String          @id @default(uuid()) @db.Uuid
+  masterId   String          @db.Uuid
+  master     MasterProfile   @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  categoryId String          @db.Uuid
+  category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+
+  @@unique([masterId, categoryId])
+  @@index([categoryId])
+  @@map("master_skills")
+}
+
+model MasterMedia {
+  id            String          @id @default(uuid()) @db.Uuid
+  masterId      String          @db.Uuid
+  master        MasterProfile   @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  kind          MasterMediaKind
+  objectKey     String
+  caption       String?
+  adminApproved Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+
+  @@index([masterId])
+  @@map("master_media")
+}
+
+model ServiceArea {
+  id        String        @id @default(uuid()) @db.Uuid
+  masterId  String        @db.Uuid
+  master    MasterProfile @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  label     String
+  centerLat Decimal       @db.Decimal(9, 6)
+  centerLng Decimal       @db.Decimal(9, 6)
+  radiusM   Int
+  createdAt DateTime      @default(now())
+
+  @@index([masterId])
+  @@map("service_areas")
+}
+
+model AvailabilitySlot {
+  id        String             @id @default(uuid()) @db.Uuid
+  masterId  String             @db.Uuid
+  master    MasterProfile      @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  day       DateTime           @db.Date
+  kind      AvailabilityKind
+  source    AvailabilitySource @default(MANUAL)
+  createdAt DateTime           @default(now())
+
+  @@unique([masterId, day, kind])
+  @@map("availability_slots")
+}
+
+model Verification {
+  id         String               @id @default(uuid()) @db.Uuid
+  masterId   String               @db.Uuid
+  master     MasterProfile        @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  provider   VerificationProvider @default(MANUAL)
+  status     VerificationStatus   @default(PENDING)
+  payload    Json?
+  note       String?
+  decidedBy  String?              @db.Uuid
+  decidedAt  DateTime?
+  createdAt  DateTime             @default(now())
+
+  @@index([masterId])
+  @@index([status])
+  @@map("verifications")
+}
+
+// ─────────────────────────── Addresses ───────────────────────────
+model Address {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String
+  addressText String
+  latitude    Decimal  @db.Decimal(9, 6)
+  longitude   Decimal  @db.Decimal(9, 6)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─────────────────────────── Auth plumbing ───────────────────────────
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  userAgent        String?
+  ip               String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model OtpCode {
+  id        String     @id @default(uuid()) @db.Uuid
+  phone     String
+  codeHash  String
+  purpose   OtpPurpose
+  attempts  Int        @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime   @default(now())
+
+  @@index([phone, purpose])
+  @@map("otp_codes")
+}
+
+model Device {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String         @db.Uuid
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pushToken String         @unique
+  platform  DevicePlatform @default(WEB)
+  createdAt DateTime       @default(now())
+
+  @@index([userId])
+  @@map("devices")
+}

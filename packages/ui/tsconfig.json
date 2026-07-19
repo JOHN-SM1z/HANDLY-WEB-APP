@@ -1,0 +1,11 @@
+{
+  "extends": "@handly/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "jsx": "preserve"
+  },
+  "include": ["src", "tailwind-preset.cjs"],
+  "exclude": ["node_modules"]
+}

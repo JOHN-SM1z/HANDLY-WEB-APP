@@ -1,0 +1,187 @@
+/*
+ * Handly design tokens — derived from the MVP wireframe palette.
+ * Brand accent: blue #185FA5. Primary CTAs: ink #111418. Warm-neutral grounds.
+ * Semantic roles are theme-aware: light is the default, dark overrides via
+ * prefers-color-scheme and the data-theme attribute (which always wins).
+ */
+:root {
+  /* Brand blue scale (static) */
+  --brand-50: #e6f1fb;
+  --brand-100: #cfe3f5;
+  --brand-200: #a9cdec;
+  --brand-300: #7fb2e0;
+  --brand-400: #4c90cf;
+  --brand-500: #185fa5;
+  --brand-600: #12507f; /* wireframe deep blue */
+  --brand-700: #0c447c;
+  --brand-800: #0a3560;
+  --brand-900: #072a4d;
+
+  /* Warm neutral scale (static) */
+  --neutral-50: #faf9f6;
+  --neutral-100: #f1efe8; /* wireframe warm surface */
+  --neutral-200: #e4e1d7;
+  --neutral-300: #cfcbbe;
+  --neutral-400: #a8a394;
+  --neutral-500: #8a8677;
+  --neutral-600: #6a675c;
+  --neutral-700: #57544b;
+  --neutral-800: #35332d;
+  --neutral-900: #1c1b18;
+
+  /* Fixed brand ink */
+  --ink: #111418;
+
+  /* ── Semantic roles: LIGHT ── */
+  --color-background-primary: #fbfaf7;
+  --color-background-secondary: #f1efe8;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+
+  --color-text-primary: #1c1b18;
+  --color-text-secondary: #57544b;
+  --color-text-muted: #8a8677;
+  --color-text-inverse: #ffffff;
+
+  --color-border-primary: #cfcbbe;
+  --color-border-secondary: #e4e1d7;
+  --color-border-tertiary: #ece9e1;
+
+  --color-primary: #185fa5;
+  --color-primary-hover: #12507f;
+  --color-primary-fg: #ffffff;
+  --color-primary-soft: #e6f1fb;
+  --color-primary-soft-fg: #0c447c;
+
+  --color-ink: #111418;
+  --color-ink-fg: #ffffff;
+
+  --color-focus: #185fa5;
+
+  /* Status colors (fg = text/icon, bg = subtle fill) */
+  --color-success-fg: #27500a;
+  --color-success-bg: #eaf3de;
+  --color-warning-fg: #633806;
+  --color-warning-bg: #faeeda;
+  --color-danger-fg: #791f1f;
+  --color-danger-bg: #fcebeb;
+  --color-danger-solid: #e24b4a;
+  --color-info-fg: #0c447c;
+  --color-info-bg: #e6f1fb;
+  --color-star: #ef9f27;
+
+  /* Radii & elevation */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-card: 0 1px 2px rgba(17, 20, 24, 0.06), 0 1px 3px rgba(17, 20, 24, 0.04);
+  --shadow-pop: 0 8px 24px rgba(17, 20, 24, 0.12);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ── DARK: system preference (overridden by [data-theme] below) ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #14161a;
+    --color-background-secondary: #1b1e24;
+    --color-surface: #1e2127;
+    --color-surface-raised: #23272e;
+
+    --color-text-primary: #f2f3f5;
+    --color-text-secondary: #b6bac2;
+    --color-text-muted: #868c96;
+    --color-text-inverse: #14161a;
+
+    --color-border-primary: #3a3f48;
+    --color-border-secondary: #2c313a;
+    --color-border-tertiary: #262b33;
+
+    --color-primary: #4c90cf;
+    --color-primary-hover: #7fb2e0;
+    --color-primary-fg: #0a1420;
+    --color-primary-soft: #16324c;
+    --color-primary-soft-fg: #bcdcf6;
+
+    --color-ink: #f2f3f5;
+    --color-ink-fg: #14161a;
+
+    --color-focus: #7fb2e0;
+
+    --color-success-fg: #bfe39a;
+    --color-success-bg: #1f2c17;
+    --color-warning-fg: #f0cf9a;
+    --color-warning-bg: #2e2413;
+    --color-danger-fg: #f2b4b4;
+    --color-danger-bg: #2e1717;
+    --color-danger-solid: #e24b4a;
+    --color-info-fg: #bcdcf6;
+    --color-info-bg: #16324c;
+    --color-star: #f0b74a;
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-background-primary: #fbfaf7;
+  --color-background-secondary: #f1efe8;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-text-primary: #1c1b18;
+  --color-text-secondary: #57544b;
+  --color-text-muted: #8a8677;
+  --color-text-inverse: #ffffff;
+  --color-border-primary: #cfcbbe;
+  --color-border-secondary: #e4e1d7;
+  --color-border-tertiary: #ece9e1;
+  --color-primary: #185fa5;
+  --color-primary-hover: #12507f;
+  --color-primary-fg: #ffffff;
+  --color-primary-soft: #e6f1fb;
+  --color-primary-soft-fg: #0c447c;
+  --color-ink: #111418;
+  --color-ink-fg: #ffffff;
+  --color-focus: #185fa5;
+  --color-success-fg: #27500a;
+  --color-success-bg: #eaf3de;
+  --color-warning-fg: #633806;
+  --color-warning-bg: #faeeda;
+  --color-danger-fg: #791f1f;
+  --color-danger-bg: #fcebeb;
+  --color-info-fg: #0c447c;
+  --color-info-bg: #e6f1fb;
+  --color-star: #ef9f27;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-background-primary: #14161a;
+  --color-background-secondary: #1b1e24;
+  --color-surface: #1e2127;
+  --color-surface-raised: #23272e;
+  --color-text-primary: #f2f3f5;
+  --color-text-secondary: #b6bac2;
+  --color-text-muted: #868c96;
+  --color-text-inverse: #14161a;
+  --color-border-primary: #3a3f48;
+  --color-border-secondary: #2c313a;
+  --color-border-tertiary: #262b33;
+  --color-primary: #4c90cf;
+  --color-primary-hover: #7fb2e0;
+  --color-primary-fg: #0a1420;
+  --color-primary-soft: #16324c;
+  --color-primary-soft-fg: #bcdcf6;
+  --color-ink: #f2f3f5;
+  --color-ink-fg: #14161a;
+  --color-focus: #7fb2e0;
+  --color-success-fg: #bfe39a;
+  --color-success-bg: #1f2c17;
+  --color-warning-fg: #f0cf9a;
+  --color-warning-bg: #2e2413;
+  --color-danger-fg: #f2b4b4;
+  --color-danger-bg: #2e1717;
+  --color-info-fg: #bcdcf6;
+  --color-info-bg: #16324c;
+  --color-star: #f0b74a;
+}

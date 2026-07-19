@@ -1,0 +1,13 @@
+{
+  "name": "Handly",
+  "short_name": "Handly",
+  "description": "Uyingiz uchun ishonchli ustalar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbfaf7",
+  "theme_color": "#111418",
+  "lang": "uz",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

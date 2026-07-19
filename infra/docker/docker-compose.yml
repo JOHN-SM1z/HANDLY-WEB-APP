@@ -1,0 +1,44 @@
+# Handly local dev stack. Bring up with: pnpm docker:up
+# Postgres ships with PostGIS so the geo columns added in Milestone 3
+# work without swapping the image later.
+#
+# postgis/postgis is published for linux/amd64 only (no arm64 manifest), so on
+# Apple Silicon we pin the platform and let Docker Desktop run it under Rosetta 2
+# emulation — fine for a dev database. (redis:7-alpine is multi-arch: no pin needed.)
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    platform: linux/amd64
+    container_name: handly-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: handly
+      POSTGRES_PASSWORD: handly_dev_pw
+      POSTGRES_DB: handly
+    ports:
+      - "5432:5432"
+    volumes:
+      - handly_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U handly -d handly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: handly-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - handly_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  handly_postgres_data:
+  handly_redis_data:

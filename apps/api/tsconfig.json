@@ -1,0 +1,18 @@
+{
+  "extends": "@handly/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "outDir": "dist",
+    "baseUrl": "./",
+    "declaration": false,
+    "sourceMap": true,
+    "strictPropertyInitialization": false,
+    "isolatedModules": false
+  },
+  "include": ["src", "prisma", "test"],
+  "exclude": ["node_modules", "dist"]
+}
