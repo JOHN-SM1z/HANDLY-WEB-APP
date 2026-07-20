@@ -32,16 +32,28 @@ interface RequestOptions {
   auth?: boolean;
 }
 
+// GET/PATCH/DELETE are naturally idempotent, so a pure network-layer failure
+// (no response reached at all — a dropped mobile connection, a proxy hiccup)
+// is safe to retry once transparently. POST is left alone: since a network
+// failure means we can't tell whether the server saw the request, blindly
+// retrying a create could double it — the caller's UI action stays retryable
+// by the user instead.
+const RETRYABLE_METHODS = new Set(['GET', 'PATCH', 'DELETE']);
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = options.method ?? 'GET';
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (options.auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const body = options.body !== undefined ? JSON.stringify(options.body) : undefined;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    credentials: 'include',
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, { method, headers, credentials: 'include', body });
+  } catch (networkErr) {
+    if (!RETRYABLE_METHODS.has(method)) throw networkErr;
+    await new Promise((r) => setTimeout(r, 400));
+    res = await fetch(`${BASE_URL}${path}`, { method, headers, credentials: 'include', body });
+  }
 
   if (res.status === 204) return undefined as T;
 

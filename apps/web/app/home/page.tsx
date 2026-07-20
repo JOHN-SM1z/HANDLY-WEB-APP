@@ -1,48 +1,35 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AppHeader } from '@/components/app-header';
+import { CategoryIcon } from '@/components/category-icon';
+import { BottomNav } from '@/components/nav/bottom-nav';
 import { Button } from '@/components/ui/button';
-import { CheckIcon } from '@/components/ui/icons';
+import { BellIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { api } from '@/lib/api';
-import { authApi } from '@/lib/auth';
-import { useSession } from '@/lib/session';
+import { categoriesApi } from '@/lib/categories';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
 interface MeResponse {
-  id: string;
   phone: string;
   role: 'CUSTOMER' | 'MASTER' | 'ADMIN';
-  status: string;
-  referralCode: string;
 }
-
-const roleLabel: Record<MeResponse['role'], string> = {
-  CUSTOMER: 'Mijoz',
-  MASTER: 'Usta',
-  ADMIN: 'Administrator',
-};
 
 export default function HomePage() {
   const { ready, user } = useRequireAuth();
-  const router = useRouter();
-  const clear = useSession((s) => s.clear);
 
   const { data: me } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get<MeResponse>('/me'),
     enabled: Boolean(user),
   });
-
-  async function logout() {
-    try {
-      await authApi.logout();
-    } finally {
-      clear();
-      router.replace('/login');
-    }
-  }
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['categories'],
+    queryFn: categoriesApi.list,
+    enabled: Boolean(user),
+  });
 
   if (!ready || !user) {
     return (
@@ -56,46 +43,75 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col">
-      <header className="flex items-center justify-between border-b border-border-tertiary px-5 py-4">
-        <Logo size={30} withWordmark />
-        <Button variant="ghost" size="sm" onClick={() => void logout()}>
-          Chiqish
-        </Button>
-      </header>
+      <AppHeader
+        title="Assalomu alaykum 👋"
+        right={
+          <Link
+            href="/notifications"
+            aria-label="Bildirishnomalar"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-content-secondary hover:bg-background-secondary"
+          >
+            <BellIcon width={19} height={19} />
+          </Link>
+        }
+      />
 
-      <div className="flex flex-1 flex-col gap-4 px-5 py-6">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-content-primary">
-            Assalomu alaykum 👋
-          </h1>
-          <p className="mt-1 text-sm text-content-secondary">
-            {me?.phone ?? user.phone} ·{' '}
-            <span className="font-medium text-primary">{roleLabel[user.role]}</span>
+      <div className="flex flex-1 flex-col gap-6 px-5 py-5">
+        <p className="text-sm text-content-secondary">
+          {me?.phone ?? user.phone} — muammoingizni tasvirlab bering, biz mos ustani topamiz.
+        </p>
+
+        <Link href="/orders/new">
+          <Button size="lg" fullWidth>
+            + Yangi buyurtma yaratish
+          </Button>
+        </Link>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xs font-medium uppercase tracking-wide text-content-muted">
+              Xizmatlar
+            </h2>
+          </div>
+
+          {categoriesLoading ? (
+            <div className="grid grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                // eslint-disable-next-line react/no-array-index-key
+                <div key={i} className="h-20 animate-pulse rounded-xl bg-background-secondary" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {categories?.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/orders/new?category=${c.slug}`}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-border-tertiary bg-surface px-2 py-4 text-center shadow-card transition-colors hover:bg-background-secondary"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                    <CategoryIcon iconKey={c.iconKey} />
+                  </span>
+                  <span className="text-xs font-medium leading-tight text-content-primary">
+                    {c.nameUz}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-xl border border-border-tertiary bg-background-secondary p-4">
+          <p className="text-sm font-medium text-content-primary">Qanday ishlaydi?</p>
+          <p className="mt-1 text-sm leading-relaxed text-content-secondary">
+            Xizmat turini tanlang, muammoni rasm bilan tasvirlab bering — AI bepul tashxis
+            qo&apos;yadi va narx oralig&apos;ini hisoblaydi. Keyin bitta tasdiqlangan ustani
+            topamiz.
           </p>
-        </div>
-
-        <div className="flex items-start gap-3 rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success-bg text-success-fg">
-            <CheckIcon width={18} height={18} />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-content-primary">Hisobingiz tayyor</p>
-            <p className="mt-0.5 text-sm text-content-secondary">
-              Milestone 1 (autentifikatsiya va profil) muvaffaqiyatli o‘rnatildi. Keyingi
-              bosqichlarda xizmatlar, buyurtmalar va to‘lovlar qo‘shiladi.
-            </p>
-          </div>
-        </div>
-
-        {me?.referralCode && (
-          <div className="rounded-xl border border-border-tertiary bg-background-secondary p-4">
-            <p className="text-xs uppercase tracking-wide text-content-muted">Referal kod</p>
-            <p className="mt-1 font-mono text-lg font-semibold tracking-widest text-content-primary">
-              {me.referralCode}
-            </p>
-          </div>
-        )}
+        </section>
       </div>
+
+      <BottomNav />
     </main>
   );
 }

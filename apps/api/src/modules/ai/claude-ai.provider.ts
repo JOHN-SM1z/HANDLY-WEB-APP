@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { z } from 'zod';
+// zodOutputFormat's types require the zod/v4 surface; the rest of the codebase
+// uses classic zod v3 (packages/contracts) — scoped to this file only.
+import * as z from 'zod/v4';
 import { AppConfig } from '../../infra/config/app-config';
 import {
   type AiProvider,

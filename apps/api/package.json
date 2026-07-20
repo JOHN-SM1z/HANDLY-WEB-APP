@@ -22,7 +22,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
+    "@anthropic-ai/sdk": "^0.112.3",
     "@fastify/cookie": "^11.0.1",
     "@fastify/multipart": "^9.0.1",
     "@handly/contracts": "workspace:*",

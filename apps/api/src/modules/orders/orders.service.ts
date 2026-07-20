@@ -18,6 +18,7 @@ import {
   ORDER_TIME_SLOTS,
   OrderStatus,
   type OrderUpdateInput,
+  utcIsoToSlot,
 } from '@handly/contracts';
 import { AppConfig } from '../../infra/config/app-config';
 import { PrismaService } from '../../infra/prisma/prisma.service';
@@ -357,8 +358,10 @@ export class OrdersService {
     if (when.getTime() > max) {
       throw new BadRequestException(`Ko'pi bilan ${ORDER_MAX_DAYS_AHEAD} kun oldindan band qilish mumkin`);
     }
-    const hhmm = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
-    if (!(ORDER_TIME_SLOTS as readonly string[]).includes(hhmm)) {
+    // UZ is a fixed UTC+5 offset (no DST) — compare in Tashkent wall-clock
+    // terms via UTC-only math, independent of the server process's own timezone.
+    const { slot } = utcIsoToSlot(when.toISOString());
+    if (!(ORDER_TIME_SLOTS as readonly string[]).includes(slot)) {
       throw new BadRequestException(`Vaqt oralig'i: ${ORDER_TIME_SLOTS.join(', ')}`);
     }
   }

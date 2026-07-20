@@ -17,6 +17,9 @@ build/
 # prisma
 apps/api/prisma/*.db
 
+# local dev media uploads (LocalDiskStorage; UPLOAD_DIR)
+apps/api/uploads/
+
 # logs
 *.log
 npm-debug.log*

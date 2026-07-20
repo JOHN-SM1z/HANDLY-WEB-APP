@@ -2,8 +2,8 @@
 
 # Handly — Technical Architecture Document (MVP v3)
 
-**Status:** Accepted — Milestone 1 (Foundations + Auth & Profiles) implemented & verified 2026-07-19
-**Date:** 2026-07-18 (v3.1 — approved MVP decisions folded in 2026-07-19)
+**Status:** Accepted — Milestone 1 (Foundations + Auth & Profiles) implemented & verified 2026-07-19; Milestone 2 (Requests, AI diagnosis, pricing) implemented & verified 2026-07-20
+**Date:** 2026-07-18 (v3.2 — Milestone 2 completion folded in 2026-07-20)
 **Sources:** `handly_mvp_v2_full_wireframe.html` (screens A–E) + founder spec additions (subscriptions, Complexity Escalation Layer, Handly Guarantee, penalties, cashback/loyalty/referrals, service tiers, admin dashboard)
 
 > See §0.1 for the approved MVP simplifications and the tax-withholding design that this document is now the source of truth for.
@@ -794,7 +794,7 @@ Deliberately not Kubernetes: two VMs carry this well past MVP; the stateless tie
 |---|---|---|---|
 | **M0 — Foundations** ✅ | 1 wk | Monorepo (pnpm+Turborepo), Prisma baseline, design tokens, Docker Compose, env validation. *(CI/CD + rules-engine skeleton deferred to later milestones.)* | **Done 2026-07-19** |
 | **M1 — Auth & profiles** ✅ | 2 wk | Phone+password+OTP (Eskiz/mock), rotating refresh sessions, RBAC + capability guards, customer profile/addresses, master registration + profile (skills, experience, certifications/portfolio metadata, service areas), catalog, `TaxProvider` interface + `MockTaxProvider`, PINFL encryption. Verified end-to-end (curl + browser). | **Done 2026-07-19** |
-| **M2 — Requests, AI, pricing** | 2 wk | Categories, request wizard (media, GPS, service tiers, slots), **AI diagnosis (free)**, pricing engine v1 (bands, complexity, tier fees), booking confirmation | Order reaches `PRICED` with AI-enriched quote |
+| **M2 — Requests, AI, pricing** ✅ | 2 wk | Categories, request wizard (media, GPS, service tiers, slots), **AI diagnosis (free, Claude + deterministic fallback)**, pricing engine v1 (bands, complexity, tier fees), quote confirmation + consent, order lifecycle `DRAFT→PRICED→SEARCHING`. Verified end-to-end (curl + browser). | **Done 2026-07-20** |
 | **M3 — Dispatch & lifecycle** | 2–3 wk | Manual admin verification queue (MyID behind interface), availability calendar, PostGIS matching + sequential cascade + Premium head start, socket/push offers, live tracking, completion confirmation, reviews, masked contact | Full customer↔master lifecycle on staging within ETA windows |
 | **M4 — Money** | 2–3 wk | Payment abstraction (**Click first**, then Payme, Uzum), order payments + 1% tax ledger, platform fees, subscriptions (Free quota + Premium + 14-day trial + renewal), earnings wallet, payouts (admin-manual first), reconciliation | Real webhook activates Premium; paid order settles ledger correctly |
 | **M5 — Trust & incentives** | 2 wk | Trust tiers + gates, penalty engine + sanctions, **Handly Guarantee** (claims + rework/refund flows), cashback/credits wallet, referrals, loyalty rates, digital-payment discounts | Economy loops run end-to-end from rule-configs |

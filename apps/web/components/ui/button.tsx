@@ -1,7 +1,7 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 import { cn } from '@/lib/cn';
 
-type Variant = 'primary' | 'brand' | 'soft' | 'outline' | 'ghost';
+type Variant = 'primary' | 'brand' | 'soft' | 'outline' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
@@ -10,6 +10,7 @@ const variants: Record<Variant, string> = {
   soft: 'bg-primary-soft text-primary-soft-fg hover:brightness-[0.97]',
   outline: 'border border-border-primary text-content-primary hover:bg-background-secondary',
   ghost: 'text-content-secondary hover:bg-background-secondary',
+  danger: 'bg-danger-solid text-ink-fg hover:opacity-90',
 };
 
 const sizes: Record<Size, string> = {

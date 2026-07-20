@@ -79,10 +79,45 @@ export const COMPLEXITY_INFO: Record<
   CRITICAL: { multiplier: 2.2, labelUz: 'Jiddiy' },
 };
 
-/** Bookable time slots for SCHEDULED orders (per wireframe). */
+/** Bookable time slots for SCHEDULED orders (per wireframe), in Tashkent wall-clock time. */
 export const ORDER_TIME_SLOTS = ['09:00', '11:00', '14:00', '16:00'] as const;
 /** How many days ahead a SCHEDULED order can be booked. */
 export const ORDER_MAX_DAYS_AHEAD = 14;
+
+/**
+ * Uzbekistan is a fixed UTC+5 offset year-round (no DST) — so slot math uses
+ * Date.UTC()/getUTC*() throughout instead of local Date methods. That keeps
+ * "09:00" meaning Tashkent 09:00 regardless of the server's or browser's own
+ * system timezone (dev laptop, CI runner, production host).
+ */
+const UZ_UTC_OFFSET_HOURS = 5;
+
+/** {dateStr: "2026-07-21", slot: "09:00"} (Tashkent) -> UTC ISO instant string. */
+export function slotToUtcIso(dateStr: string, slot: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = slot.split(':').map(Number);
+  return new Date(
+    Date.UTC(year!, (month ?? 1) - 1, day, (hour ?? 0) - UZ_UTC_OFFSET_HOURS, minute ?? 0),
+  ).toISOString();
+}
+
+/** UTC ISO instant string -> {dateStr, slot} in Tashkent wall-clock time. */
+export function utcIsoToSlot(iso: string): { dateStr: string; slot: string } {
+  const shifted = new Date(new Date(iso).getTime() + UZ_UTC_OFFSET_HOURS * 3_600_000);
+  const dateStr = shifted.toISOString().slice(0, 10);
+  const slot = shifted.toISOString().slice(11, 16);
+  return { dateStr, slot };
+}
+
+/** "2026-07-21" in Tashkent "today" terms — independent of the caller's own system timezone. */
+export function tashkentTodayDateStr(): string {
+  return utcIsoToSlot(new Date().toISOString()).dateStr;
+}
+
+/** "09:35" in Tashkent "right now" terms — used to filter past slots for a same-day booking. */
+export function tashkentNowHHMM(): string {
+  return utcIsoToSlot(new Date().toISOString()).slot;
+}
 
 // ─────────────── Request schemas ───────────────
 export const orderCreateSchema = z.object({
