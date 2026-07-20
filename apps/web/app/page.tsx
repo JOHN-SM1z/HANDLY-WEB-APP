@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { MarketingLanding } from '@/components/landing/marketing-landing';
 import { Logo } from '@/components/ui/logo';
 import { useSession } from '@/lib/session';
 
@@ -12,14 +13,28 @@ export default function IndexPage() {
 
   useEffect(() => {
     if (!ready) return;
-    router.replace(user ? '/home' : '/login');
+    if (user) router.replace('/home');
   }, [ready, user, router]);
 
-  return (
-    <main className="flex min-h-[100dvh] items-center justify-center">
-      <div className="animate-pulse">
-        <Logo size={48} withWordmark />
-      </div>
-    </main>
-  );
+  if (!ready) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center">
+        <div className="animate-pulse">
+          <Logo size={48} withWordmark />
+        </div>
+      </main>
+    );
+  }
+
+  if (user) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center">
+        <div className="animate-pulse">
+          <Logo size={48} withWordmark />
+        </div>
+      </main>
+    );
+  }
+
+  return <MarketingLanding />;
 }

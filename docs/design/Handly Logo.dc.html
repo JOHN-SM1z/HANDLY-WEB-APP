@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="handly-tokens.css">
+  <style>
+    body{margin:0}
+    a{color:var(--color-primary);text-decoration:none} a:hover{color:var(--color-primary-hover)}
+    .lbl{font-size:var(--text-xs);letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted);font-weight:var(--weight-semibold)}
+  </style>
+</helmet>
+<div style="--ac:{{ accent }};background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);min-height:100vh;padding:40px 32px 72px">
+<div style="max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <svg viewBox="0 0 120 120" style="width:34px;height:34px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="font-weight:var(--weight-semibold);font-size:var(--text-lg)">Handly</span>
+    </div>
+    <span class="lbl">Final brand mark · v2</span>
+  </div>
+
+  <!-- HERO LOCKUP -->
+  <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:64px 32px;display:flex;flex-direction:column;align-items:center;gap:28px">
+    <div style="display:flex;align-items:center;gap:22px">
+      <svg viewBox="0 0 120 120" style="width:96px;height:96px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="font-size:76px;font-weight:var(--weight-bold);letter-spacing:-0.03em;color:var(--color-text-primary)">Handly</span>
+    </div>
+    <p style="margin:0;max-width:52ch;text-align:center;color:var(--color-text-secondary);font-size:var(--text-lg);line-height:var(--leading-normal)">The H that checks out. Two clean stems carry the brand letter; the crossbar rises into a checkmark — <strong style="color:var(--color-text-primary);font-weight:var(--weight-semibold)">verified, safe, done.</strong></p>
+  </div>
+
+  <!-- MARK ANATOMY + CLEAR SPACE -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px;display:flex;flex-direction:column;gap:18px">
+      <span class="lbl">The mark</span>
+      <div style="flex:1;display:grid;place-items:center;background:var(--color-background-secondary);border-radius:var(--radius-md);padding:28px;position:relative">
+        <div style="position:absolute;inset:20px;border:1px dashed var(--color-border-primary);border-radius:var(--radius-sm)"></div>
+        <svg viewBox="0 0 120 120" style="width:150px;height:150px;position:relative;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-normal)">Clear space equal to the checkmark's height on every side. Never crowd the mark.</p>
+    </div>
+    <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px;display:flex;flex-direction:column;gap:18px">
+      <span class="lbl">Two-tone &amp; mono</span>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:var(--color-background-secondary);border-radius:var(--radius-md);display:grid;place-items:center;padding:20px"><svg viewBox="0 0 120 120" style="width:80px;height:80px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="background:var(--color-background-secondary);border-radius:var(--radius-md);display:grid;place-items:center;padding:20px"><svg viewBox="0 0 120 120" style="width:80px;height:80px;--h:var(--color-ink);--ck:var(--color-ink)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="background:var(--color-ink);border-radius:var(--radius-md);display:grid;place-items:center;padding:20px"><svg viewBox="0 0 120 120" style="width:80px;height:80px;--h:#fff;--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="background:var(--ac);border-radius:var(--radius-md);display:grid;place-items:center;padding:20px"><svg viewBox="0 0 120 120" style="width:80px;height:80px;--h:#fff;--ck:#fff"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP ICON -->
+  <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px;display:flex;flex-direction:column;gap:22px">
+    <span class="lbl">App icon</span>
+    <div style="display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap">
+      <div style="text-align:center"><div style="width:132px;height:132px;border-radius:30px;background:var(--color-ink);display:grid;place-items:center;box-shadow:var(--shadow-pop)"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:#fff;--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl" style="margin-top:10px">Primary</div></div>
+      <div style="text-align:center"><div style="width:132px;height:132px;border-radius:30px;background:var(--ac);display:grid;place-items:center;box-shadow:var(--shadow-pop)"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:#fff;--ck:#fff"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl" style="margin-top:10px">Orange</div></div>
+      <div style="text-align:center"><div style="width:132px;height:132px;border-radius:30px;background:#fff;border:1px solid var(--color-border-secondary);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl" style="margin-top:10px">Light</div></div>
+      <div style="flex:1;min-width:200px;align-self:center">
+        <p style="margin:0;color:var(--color-text-secondary);font-size:var(--text-sm);line-height:var(--leading-relaxed)">Ships as an <strong style="color:var(--color-text-primary)">ink squircle</strong> — the highest-contrast, most premium tile. The checkmark carries the only color, so the icon still pops in a crowded home screen.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCALE + FAVICON -->
+  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:20px">
+    <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px;display:flex;flex-direction:column;gap:22px">
+      <span class="lbl">Responsive scale</span>
+      <div style="display:flex;align-items:center;gap:30px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:12px"><svg viewBox="0 0 120 120" style="width:40px;height:40px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-weight:var(--weight-bold);font-size:28px;letter-spacing:-0.02em">Handly</span></span>
+        <span style="display:inline-flex;align-items:center;gap:8px"><svg viewBox="0 0 120 120" style="width:26px;height:26px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-weight:var(--weight-bold);font-size:18px;letter-spacing:-0.02em">Handly</span></span>
+        <svg viewBox="0 0 120 120" style="width:30px;height:30px;--h:var(--color-ink);--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+    <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:28px;display:flex;flex-direction:column;gap:20px">
+      <span class="lbl">Favicon · 16 / 32px</span>
+      <div style="display:flex;align-items:flex-end;gap:22px">
+        <div style="text-align:center"><div style="width:56px;height:56px;border-radius:13px;background:var(--color-ink);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:40px;height:40px;--h:#fff;--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl" style="margin-top:8px">32</div></div>
+        <div style="text-align:center"><div style="width:32px;height:32px;border-radius:8px;background:var(--color-ink);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:23px;height:23px;--h:#fff;--ck:var(--ac)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="lbl" style="margin-top:8px">16</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accent&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#f26a1b&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#f26a1b&quot;,&quot;#ff5a1f&quot;,&quot;#f2661c&quot;,&quot;#e2560d&quot;],&quot;section&quot;:&quot;Brand&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return { accent: this.props.accent ?? '#f26a1b' };
+  }
+}
+</script>
+</body>
+</html>

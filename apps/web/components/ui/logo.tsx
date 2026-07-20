@@ -1,5 +1,6 @@
 import { cn } from '@/lib/cn';
 
+/** Bare two-tone mark (ink stems + orange checkmark crossbar) — per docs/design/BRAND.md. */
 export function Logo({
   size = 40,
   withWordmark = false,
@@ -11,15 +12,16 @@ export function Logo({
 }) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <rect width="32" height="32" rx="8" fill="var(--color-ink)" />
+      <svg width={size} height={size} viewBox="0 0 120 120" fill="none" aria-hidden="true">
+        <rect x="26" y="24" width="16" height="72" rx="3" fill="var(--color-ink)" />
+        <rect x="78" y="24" width="16" height="72" rx="3" fill="var(--color-ink)" />
         <path
-          d="M10 22V10M10 16h7M17 22V10"
-          stroke="var(--color-ink-fg)"
-          strokeWidth="2.4"
+          d="M39 56 L54 69 L81 40"
+          stroke="var(--color-primary)"
+          strokeWidth="15.5"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <circle cx="22" cy="11.5" r="2.4" fill="var(--color-primary)" />
       </svg>
       {withWordmark && (
         <span className="text-lg font-semibold tracking-tight text-content-primary">Handly</span>

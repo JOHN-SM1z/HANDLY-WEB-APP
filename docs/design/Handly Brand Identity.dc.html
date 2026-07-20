@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="ds-styles.css">
+  <style>
+    a{color:var(--color-accent);text-decoration:none} a:hover{color:var(--color-accent-700)}
+    .kick{font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent);margin:0}
+    .lede{max-width:640px;font-size:17px;line-height:1.55;color:color-mix(in srgb,var(--color-text) 78%,transparent)}
+  </style>
+</helmet>
+<div style="--color-accent:{{ accent }};--color-text:{{ ink }};background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);min-height:100vh">
+
+  <div class="nav" style="position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--color-bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:2px solid var(--color-divider)">
+    <span class="nav-brand" style="display:inline-flex;align-items:center;gap:9px">
+      <svg viewBox="0 0 120 120" style="width:26px;height:26px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Handly
+    </span>
+    <a href="#concepts">Concepts</a>
+    <a href="#decision">Selection</a>
+    <a href="#mark">Identity</a>
+    <a href="#system">System</a>
+  </div>
+
+  <!-- ══ COVER ══ -->
+  <section style="max-width:1200px;margin:0 auto;padding:96px 48px 80px">
+    <p class="kick">Brand Identity System · Handly · 2026</p>
+    <h1 style="font-size:clamp(44px,6.4vw,88px);line-height:0.98;letter-spacing:-0.03em;margin:22px 0 26px;max-width:15ch;text-wrap:balance">A mark you can trust with your home.</h1>
+    <p class="lede">Handly connects people with verified home-service professionals — plumbers, electricians, cleaners, technicians. The identity has one job before a single word is read: to say <em style="font-style:normal;color:var(--color-accent);font-weight:600">this is safe, and it works.</em></p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--color-divider);border:2px solid var(--color-divider);margin-top:52px">
+      <div style="background:var(--color-bg);padding:20px 22px"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:8px">Client</div><div style="font-family:var(--font-heading);font-weight:800;font-size:18px">Handly</div></div>
+      <div style="background:var(--color-bg);padding:20px 22px"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:8px">Sector</div><div style="font-family:var(--font-heading);font-weight:800;font-size:18px">Home services</div></div>
+      <div style="background:var(--color-bg);padding:20px 22px"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:8px">Market</div><div style="font-family:var(--font-heading);font-weight:800;font-size:18px">Uzbekistan → Global</div></div>
+      <div style="background:var(--color-bg);padding:20px 22px"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:8px">Scope</div><div style="font-family:var(--font-heading);font-weight:800;font-size:18px">Logo, color, type</div></div>
+    </div>
+  </section>
+
+  <!-- ══ PRINCIPLES ══ -->
+  <section style="border-top:2px solid var(--color-divider);background:var(--color-surface)">
+    <div style="max-width:1200px;margin:0 auto;padding:40px 48px;display:grid;grid-template-columns:repeat(4,1fr);gap:44px">
+      <div><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;margin-bottom:6px">Trust first</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 65%,transparent)">Every choice earns the feeling: safe hands in my home.</div></div>
+      <div><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;margin-bottom:6px">Radically simple</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 65%,transparent)">One idea, one shape. Memorable beats decorative.</div></div>
+      <div><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;margin-bottom:6px">Human & warm</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 65%,transparent)">A warm accent and round terminals — approachable, not corporate.</div></div>
+      <div><div style="font-family:var(--font-heading);font-weight:800;font-size:15px;margin-bottom:6px">Scales to 16px</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 65%,transparent)">Reads on a billboard and in a browser tab, identically.</div></div>
+    </div>
+  </section>
+
+  <!-- ══ CONCEPTS ══ -->
+  <section id="concepts" style="max-width:1200px;margin:0 auto;padding:88px 48px 0;scroll-margin-top:70px">
+    <p class="kick">01 — Exploration</p>
+    <h2 style="font-size:clamp(32px,4vw,52px);line-height:1.02;letter-spacing:-0.02em;margin:16px 0 14px">Five ways to draw trust.</h2>
+    <p class="lede" style="margin-bottom:44px">Each concept builds from Handly's letter <strong style="font-weight:600">H</strong> and a single core idea. Below each mark: the psychology it's engineered to trigger.</p>
+  </section>
+  <section style="max-width:1200px;margin:0 auto;padding:0 48px 88px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+
+      <!-- C01 -->
+      <div style="background:var(--color-bg);padding:30px;display:flex;flex-direction:column;gap:18px;position:relative;outline:3px solid var(--color-accent);outline-offset:-3px">
+        <div style="position:absolute;top:0;right:0;background:var(--color-accent);color:#fff;font:800 10px/1 var(--font-heading);letter-spacing:.12em;padding:7px 11px">★ SELECTED</div>
+        <div style="background:#fff;border:1px solid var(--color-divider);aspect-ratio:16/10;display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:118px;height:118px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:5px">Concept 01</div><h3 style="font-size:22px;margin:0">The Verified H</h3></div>
+        <p style="font-size:13.5px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">The crossbar of the H <em style="font-style:normal;font-weight:600">is</em> a checkmark. One shape carries the brand letter and the single thing every customer is hunting for — verified. It reads as approval, a job done, a professional you can trust.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto"><span class="tag tag-accent">Verification</span><span class="tag tag-neutral">Trust</span><span class="tag tag-neutral">The letter H</span></div>
+      </div>
+
+      <!-- C02 -->
+      <div style="background:var(--color-bg);padding:30px;display:flex;flex-direction:column;gap:18px">
+        <div style="background:#fff;border:1px solid var(--color-divider);aspect-ratio:16/10;display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:118px;height:118px;--h:var(--color-text);--ck:var(--color-accent)"><path d="M19 53 L60 21 L101 53" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><rect x="27" y="53" width="15" height="41" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="53" width="15" height="41" rx="2.5" fill="var(--h,currentColor)"/><rect x="42" y="67" width="36" height="14" rx="2.5" fill="var(--h,currentColor)"/></svg></div>
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:5px">Concept 02</div><h3 style="font-size:22px;margin:0">The Homestead</h3></div>
+        <p style="font-size:13.5px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">A gable roof rests on two columns — and the columns are an H. It states home and shelter directly: the place Handly is invited into. The warm roof signals care over what matters most.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto"><span class="tag tag-neutral">Home</span><span class="tag tag-neutral">Shelter</span><span class="tag tag-neutral">Protection</span></div>
+      </div>
+
+      <!-- C03 -->
+      <div style="background:var(--color-bg);padding:30px;display:flex;flex-direction:column;gap:18px">
+        <div style="background:#fff;border:1px solid var(--color-divider);aspect-ratio:16/10;display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:118px;height:118px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="26" width="16" height="68" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="26" width="16" height="68" rx="2.5" fill="var(--h,currentColor)"/><rect x="42" y="52" width="17" height="16" rx="2.5" fill="var(--h,currentColor)"/><rect x="61" y="52" width="17" height="16" rx="2.5" fill="var(--h,currentColor)"/><circle cx="60" cy="60" r="9.5" fill="var(--ck,currentColor)"/></svg></div>
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:5px">Concept 03</div><h3 style="font-size:22px;margin:0">The Handshake</h3></div>
+        <p style="font-size:13.5px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Two arms reach in from either side and meet at a single node. Handly is a marketplace: this is the customer and the professional, and the red point is the moment they're matched. Human connection, made literal.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto"><span class="tag tag-neutral">Connection</span><span class="tag tag-neutral">Marketplace</span><span class="tag tag-neutral">Human</span></div>
+      </div>
+
+      <!-- C04 -->
+      <div style="background:var(--color-bg);padding:30px;display:flex;flex-direction:column;gap:18px">
+        <div style="background:#fff;border:1px solid var(--color-divider);aspect-ratio:16/10;display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:118px;height:118px;--h:var(--color-text);--ck:var(--color-accent)"><path d="M60 103 C 43 79, 30 69, 30 52 A 30 30 0 1 1 90 52 C 90 69, 77 79, 60 103 Z" fill="var(--h,currentColor)"/><rect x="44" y="37" width="9" height="30" rx="2" fill="var(--ck,currentColor)"/><rect x="67" y="37" width="9" height="30" rx="2" fill="var(--ck,currentColor)"/><rect x="53" y="48" width="14" height="8" rx="2" fill="var(--ck,currentColor)"/></svg></div>
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:5px">Concept 04</div><h3 style="font-size:22px;margin:0">The Local Pin</h3></div>
+        <p style="font-size:13.5px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">A location pin with the H at its heart. Instantly legible as an app and instantly local — trusted masters, right near you — the metaphor that made on-demand marketplaces feel effortless.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto"><span class="tag tag-neutral">Local</span><span class="tag tag-neutral">On-demand</span><span class="tag tag-neutral">Location</span></div>
+      </div>
+
+      <!-- C05 -->
+      <div style="background:var(--color-bg);padding:30px;display:flex;flex-direction:column;gap:18px">
+        <div style="background:#fff;border:1px solid var(--color-divider);aspect-ratio:16/10;display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:118px;height:118px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="28" y="24" width="18" height="72" rx="2" fill="var(--h,currentColor)"/><rect x="74" y="24" width="18" height="72" rx="2" fill="var(--h,currentColor)"/><rect x="46" y="51" width="28" height="18" fill="var(--h,currentColor)"/></svg></div>
+        <div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent);margin-bottom:5px">Concept 05</div><h3 style="font-size:22px;margin:0">The Monogram</h3></div>
+        <p style="font-size:13.5px;line-height:1.55;margin:0;color:color-mix(in srgb,var(--color-text) 76%,transparent)">Pure confidence: a single, perfectly weighted H, built to be owned. No metaphor to decode — just a memorable letterform that behaves like a billion-dollar brand from the app store to a van door.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:auto"><span class="tag tag-neutral">Simplicity</span><span class="tag tag-neutral">Memorability</span><span class="tag tag-neutral">Scale</span></div>
+      </div>
+
+      <!-- pointer cell -->
+      <div style="background:var(--color-text);color:var(--color-bg);padding:30px;display:flex;flex-direction:column;justify-content:center;gap:14px">
+        <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-400)">The decision</div>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:26px;line-height:1.05;letter-spacing:-0.01em">Concept 01 leads with the feeling the brief demands.</div>
+        <a href="#decision" style="color:#fff;font-size:13px;font-weight:600;border-bottom:2px solid var(--color-accent);padding-bottom:2px;align-self:flex-start">See why ↓</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ DECISION ══ -->
+  <section id="decision" style="border-top:2px solid var(--color-divider);scroll-margin-top:70px">
+    <div style="max-width:1200px;margin:0 auto;padding:88px 48px">
+      <p class="kick">02 — The Decision</p>
+      <h2 style="font-size:clamp(32px,4vw,52px);line-height:1.02;letter-spacing:-0.02em;margin:16px 0 40px;max-width:18ch">We're building on the Verified&nbsp;H.</h2>
+      <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:start">
+        <p style="font-size:18px;line-height:1.6;margin:0;color:color-mix(in srgb,var(--color-text) 82%,transparent)">Every concept is viable — but only one leads with the exact feeling the brief demands: <em style="font-style:normal;font-weight:600;color:var(--color-text)">"I can trust this to fix my home."</em> The Verified H fuses Handly's letter with the checkmark, the most universally understood symbol of safety and approval on earth. It's the most ownable, the fastest to read, and the only one that stays legible at 16&nbsp;pixels. We refine it into the final identity.</p>
+        <table class="table">
+          <thead><tr><th>Concept</th><th style="text-align:center">Trust</th><th style="text-align:center">Simple</th><th style="text-align:center">Memory</th><th style="text-align:center">Scale</th></tr></thead>
+          <tbody>
+            <tr style="background:color-mix(in srgb,var(--color-accent) 9%,transparent)"><td style="font-weight:800;font-family:var(--font-heading)">01 · Verified H</td><td style="text-align:center;color:var(--color-accent);letter-spacing:1px">●●●●</td><td style="text-align:center;color:var(--color-accent);letter-spacing:1px">●●●●</td><td style="text-align:center;color:var(--color-accent);letter-spacing:1px">●●●●</td><td style="text-align:center;color:var(--color-accent);letter-spacing:1px">●●●●</td></tr>
+            <tr><td>02 · Homestead</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●●○</td></tr>
+            <tr><td>03 · Handshake</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●○○</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●○○</td></tr>
+            <tr><td>04 · Local Pin</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●○○</td><td style="text-align:center;letter-spacing:1px">●●●○</td></tr>
+            <tr><td>05 · Monogram</td><td style="text-align:center;letter-spacing:1px">●●○○</td><td style="text-align:center;letter-spacing:1px">●●●●</td><td style="text-align:center;letter-spacing:1px">●●●○</td><td style="text-align:center;letter-spacing:1px">●●●●</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ THE MARK ══ -->
+  <section id="mark" style="border-top:2px solid var(--color-divider);background:var(--color-text);color:var(--color-bg);scroll-margin-top:70px">
+    <div style="max-width:1200px;margin:0 auto;padding:96px 48px">
+      <p class="kick" style="color:var(--color-accent-400)">03 — The Final Identity</p>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;margin:40px 0 8px">
+        <svg viewBox="0 0 120 120" style="width:150px;height:150px;flex:none;--h:#fff;--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(72px,13vw,150px);line-height:0.9;letter-spacing:-0.045em">Handly</div>
+      </div>
+      <p style="max-width:560px;font-size:17px;line-height:1.55;color:color-mix(in srgb,var(--color-bg) 72%,transparent);margin:28px 0 0">The H that checks out. Two clean stems hold the brand letter; the crossbar rises into a checkmark — verified, safe, done. A warm accent for action, charcoal for trust, round terminals for the human on the other end.</p>
+    </div>
+  </section>
+
+  <!-- ══ ANATOMY ══ -->
+  <section style="max-width:1200px;margin:0 auto;padding:80px 48px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+      <div style="background:#fff;position:relative;min-height:360px;display:grid;place-items:center;overflow:hidden">
+        <div style="position:absolute;inset:0;display:{{ gridDisplay }};background-image:linear-gradient(var(--color-divider) 1px,transparent 1px),linear-gradient(90deg,var(--color-divider) 1px,transparent 1px);background-size:36px 36px;opacity:.5"></div>
+        <svg viewBox="0 0 120 120" style="width:240px;height:240px;position:relative;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="background:var(--color-bg);padding:44px;display:flex;flex-direction:column;justify-content:center;gap:26px">
+        <div style="display:flex;gap:16px;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-accent);flex:none;width:28px">A</span><div><div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:3px">Two stems — the H</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 62%,transparent)">The brand letter, built on a strict vertical grid. Stability and structure.</div></div></div>
+        <div style="display:flex;gap:16px;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-accent);flex:none;width:28px">B</span><div><div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:3px">Crossbar → checkmark</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 62%,transparent)">The connective stroke rises into a tick. Verified, approved, the job is done.</div></div></div>
+        <div style="display:flex;gap:16px;align-items:baseline"><span style="font-family:var(--font-heading);font-weight:800;font-size:20px;color:var(--color-accent);flex:none;width:28px">C</span><div><div style="font-family:var(--font-heading);font-weight:800;font-size:16px;margin-bottom:3px">One weight, round caps</div><div style="font-size:13px;line-height:1.5;color:color-mix(in srgb,var(--color-text) 62%,transparent)">A single stroke width and soft terminals keep it warm, friendly and human.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ APPLICATIONS ══ -->
+  <section id="apps" style="border-top:2px solid var(--color-divider);scroll-margin-top:70px">
+    <div style="max-width:1200px;margin:0 auto;padding:88px 48px 40px">
+      <p class="kick">04 — In the World</p>
+      <h2 style="font-size:clamp(32px,4vw,52px);line-height:1.02;letter-spacing:-0.02em;margin:16px 0 0">Built to travel.</h2>
+    </div>
+
+    <!-- app icon + phone -->
+    <div style="max-width:1200px;margin:0 auto;padding:0 48px 48px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+        <div style="background:var(--color-surface);padding:48px;display:flex;flex-direction:column;gap:28px">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">App icon</div>
+          <div style="display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap">
+            <div style="text-align:center"><div style="width:132px;height:132px;border-radius:29px;background:var(--color-accent);display:grid;place-items:center;box-shadow:var(--shadow-md)"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:#fff;--ck:#fff"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:11px;margin-top:10px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Primary</div></div>
+            <div style="text-align:center"><div style="width:132px;height:132px;border-radius:29px;background:var(--color-text);display:grid;place-items:center;box-shadow:var(--shadow-md)"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:#fff;--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:11px;margin-top:10px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Charcoal</div></div>
+            <div style="text-align:center"><div style="width:132px;height:132px;border-radius:29px;background:#fff;border:1px solid var(--color-divider);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:88px;height:88px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:11px;margin-top:10px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Light</div></div>
+          </div>
+        </div>
+        <!-- phone home screen -->
+        <div style="background:var(--color-bg);padding:44px;display:grid;place-items:center">
+          <div style="width:238px;height:474px;border-radius:38px;background:var(--color-text);padding:11px;box-shadow:var(--shadow-lg)">
+            <div style="width:100%;height:100%;border-radius:29px;background:linear-gradient(180deg,#2c2a28,#3a3735);overflow:hidden;position:relative;display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 18px 6px;color:#fff;font-size:11px;font-weight:600"><span>9:41</span><span style="letter-spacing:2px">● ● ▮</span></div>
+              <div style="flex:1;padding:20px 20px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:18px 16px;align-content:flex-start">
+                <div style="aspect-ratio:1;border-radius:13px;background:#5b7cc4"></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#54b06a"></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#e0a23c"></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#c65b8a"></div>
+                <div style="text-align:center"><div style="aspect-ratio:1;border-radius:13px;background:var(--color-accent);display:grid;place-items:center;box-shadow:0 6px 16px rgba(236,48,19,.5)"><svg viewBox="0 0 120 120" style="width:70%;height:70%;--h:#fff;--ck:#fff"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:8px;color:#fff;margin-top:5px;font-weight:500">Handly</div></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#6b6f76"></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#8a6bc4"></div>
+                <div style="aspect-ratio:1;border-radius:13px;background:#4bb0ad"></div>
+              </div>
+              <div style="height:52px;margin:0 14px 14px;border-radius:18px;background:rgba(255,255,255,.14);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;padding:0 8px">
+                <div style="height:26px;border-radius:9px;background:rgba(255,255,255,.22)"></div><div></div><div></div><div style="height:26px;border-radius:9px;background:rgba(255,255,255,.22)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- website header -->
+    <div style="max-width:1200px;margin:0 auto;padding:0 48px 48px">
+      <div style="border:2px solid var(--color-divider)">
+        <div style="background:var(--color-surface);padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--color-divider)">
+          <span style="width:11px;height:11px;border-radius:50%;background:#e0564a"></span><span style="width:11px;height:11px;border-radius:50%;background:#e8b13c"></span><span style="width:11px;height:11px;border-radius:50%;background:#5bb85f"></span>
+          <div style="margin-left:14px;flex:1;max-width:340px;background:var(--color-bg);border:1px solid var(--color-divider);border-radius:6px;padding:5px 12px;font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">handly.uz</div>
+        </div>
+        <div style="background:#fff;padding:18px 32px;display:flex;align-items:center;gap:32px">
+          <span style="display:inline-flex;align-items:center;gap:10px;font-family:var(--font-heading);font-weight:800;font-size:22px;letter-spacing:-0.01em;margin-right:auto"><svg viewBox="0 0 120 120" style="width:30px;height:30px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>Handly</span>
+          <span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">Services</span>
+          <span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">Find a master</span>
+          <span style="font-size:14px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">Pricing</span>
+          <span class="btn btn-primary" style="cursor:default">Book a master</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- b/w + favicon -->
+    <div style="max-width:1200px;margin:0 auto;padding:0 48px 88px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+        <!-- monochrome -->
+        <div style="background:var(--color-bg);padding:40px">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:24px">Monochrome & reversed</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--color-divider);border:1px solid var(--color-divider)">
+            <div style="background:#fff;padding:34px;display:flex;align-items:center;gap:14px;justify-content:center"><svg viewBox="0 0 120 120" style="width:52px;height:52px;--h:#1a1a1a;--ck:#1a1a1a"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:var(--font-heading);font-weight:800;font-size:32px;color:#1a1a1a;letter-spacing:-0.03em">Handly</span></div>
+            <div style="background:#1a1a1a;padding:34px;display:flex;align-items:center;gap:14px;justify-content:center"><svg viewBox="0 0 120 120" style="width:52px;height:52px;--h:#fff;--ck:#fff"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:var(--font-heading);font-weight:800;font-size:32px;color:#fff;letter-spacing:-0.03em">Handly</span></div>
+          </div>
+        </div>
+        <!-- favicon -->
+        <div style="background:var(--color-bg);padding:40px">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:24px">Favicon · small sizes</div>
+          <div style="display:flex;align-items:flex-end;gap:30px;flex-wrap:wrap">
+            <!-- browser tab -->
+            <div>
+              <div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--color-divider);border-bottom:none;border-radius:8px 8px 0 0;padding:9px 14px 10px">
+                <svg viewBox="0 0 120 120" style="width:16px;height:16px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="font-size:12px;font-weight:600">Handly — home services</span>
+                <span style="color:color-mix(in srgb,var(--color-text) 45%,transparent);font-size:13px">✕</span>
+              </div>
+              <div style="height:3px;background:var(--color-accent)"></div>
+              <div style="font-size:11px;margin-top:10px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Live tab · 16px</div>
+            </div>
+            <!-- magnified -->
+            <div style="display:flex;gap:16px">
+              <div style="text-align:center"><div style="width:56px;height:56px;border-radius:12px;background:var(--color-accent);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:40px;height:40px;--h:#fff;--ck:#fff"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:10px;margin-top:7px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">32px</div></div>
+              <div style="text-align:center"><div style="width:32px;height:32px;border-radius:7px;background:var(--color-accent);display:grid;place-items:center"><svg viewBox="0 0 120 120" style="width:23px;height:23px;--h:#fff;--ck:#fff"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:10px;margin-top:7px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">16px</div></div>
+            </div>
+          </div>
+          <!-- responsive ladder -->
+          <div style="margin-top:34px;padding-top:26px;border-top:1px solid var(--color-divider);display:flex;align-items:center;gap:26px;flex-wrap:wrap">
+            <span style="display:inline-flex;align-items:center;gap:8px"><svg viewBox="0 0 120 120" style="width:34px;height:34px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:var(--font-heading);font-weight:800;font-size:24px;letter-spacing:-0.03em">Handly</span></span>
+            <span style="display:inline-flex;align-items:center;gap:6px"><svg viewBox="0 0 120 120" style="width:24px;height:24px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:var(--font-heading);font-weight:800;font-size:17px;letter-spacing:-0.03em">Handly</span></span>
+            <svg viewBox="0 0 120 120" style="width:26px;height:26px;--h:var(--color-text);--ck:var(--color-accent)"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SYSTEM: COLOR + TYPE ══ -->
+  <section id="system" style="border-top:2px solid var(--color-divider);scroll-margin-top:70px">
+    <div style="max-width:1200px;margin:0 auto;padding:88px 48px">
+      <p class="kick">05 — The System</p>
+      <h2 style="font-size:clamp(32px,4vw,52px);line-height:1.02;letter-spacing:-0.02em;margin:16px 0 44px">Color & type.</h2>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--color-divider);border:2px solid var(--color-divider)">
+        <div style="background:var(--color-accent);color:#fff;padding:26px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">Handly Red</div>
+          <div><div style="font-size:12px;opacity:.85;line-height:1.5;margin-bottom:10px">Energy, warmth, action — the confidence to book now. Reserved for the mark and the primary move.</div><div style="font-family:var(--font-heading);font-weight:800;letter-spacing:.04em">#EC3013</div></div>
+        </div>
+        <div style="background:var(--color-text);color:var(--color-bg);padding:26px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">Charcoal Ink</div>
+          <div><div style="font-size:12px;opacity:.75;line-height:1.5;margin-bottom:10px">Trust, professionalism, stability. The base voice — type, structure, the H itself.</div><div style="font-family:var(--font-heading);font-weight:800;letter-spacing:.04em">#201E1D</div></div>
+        </div>
+        <div style="background:var(--color-bg);padding:26px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid var(--color-divider)">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">Paper</div>
+          <div><div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent);line-height:1.5;margin-bottom:10px">Space, clarity, calm. Generous white ground so the mark and the price always breathe.</div><div style="font-family:var(--font-heading);font-weight:800;letter-spacing:.04em">#F3F2F2</div></div>
+        </div>
+        <div style="background:var(--color-surface);padding:26px;min-height:210px;display:flex;flex-direction:column;justify-content:space-between">
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:19px">Steel</div>
+          <div><div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 60%,transparent);line-height:1.5;margin-bottom:10px">Neutral support for secondary text, dividers and quiet UI. Never competes with the accent.</div><div style="font-family:var(--font-heading);font-weight:800;letter-spacing:.04em">#7D7979</div></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:2px;background:var(--color-divider);border:2px solid var(--color-divider);border-top:none">
+        <div style="background:var(--color-bg);padding:40px;display:flex;flex-direction:column;justify-content:center;gap:8px">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent)">Typeface</div>
+          <div style="font-family:var(--font-heading);font-weight:800;font-size:64px;line-height:0.95;letter-spacing:-0.03em">Archivo</div>
+          <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 62%,transparent);line-height:1.5;max-width:34ch">A grotesque engineered for signage and screens — competent, modern, and quietly warm. Neutral enough to feel global, sturdy enough to feel reliable.</div>
+        </div>
+        <div style="background:var(--color-bg);padding:40px;display:flex;flex-direction:column;gap:22px;justify-content:center">
+          <div style="border-bottom:1px solid var(--color-divider);padding-bottom:16px"><div style="font-family:var(--font-heading);font-weight:800;font-size:30px;letter-spacing:-0.02em">Trusted masters, verified.</div><div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);margin-top:6px">Archivo Extra-Bold · 800 · Headlines</div></div>
+          <div style="border-bottom:1px solid var(--color-divider);padding-bottom:16px"><div style="font-weight:600;font-size:19px">Book a plumber in under two minutes.</div><div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);margin-top:6px">Archivo Semi-Bold · 600 · Subheads</div></div>
+          <div><div style="font-size:15px;color:color-mix(in srgb,var(--color-text) 80%,transparent);max-width:44ch">Every professional on Handly is background-checked, rated by real customers, and priced up front — so you always know who is coming and what it costs.</div><div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 50%,transparent);margin-top:6px">Archivo Regular · 400 · Body</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ POSTER CLOSE ══ -->
+  <section style="background:var(--color-accent);color:#fff;border-top:2px solid var(--color-divider)">
+    <div style="max-width:1200px;margin:0 auto;padding:96px 48px">
+      <svg viewBox="0 0 120 120" style="width:64px;height:64px;--h:#fff;--ck:#fff;margin-bottom:28px"><rect x="26" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><rect x="78" y="25" width="16" height="70" rx="2.5" fill="var(--h,currentColor)"/><path d="M40 55 L55 68 L80 43" fill="none" stroke="var(--ck,currentColor)" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:clamp(40px,7vw,96px);line-height:0.96;letter-spacing:-0.035em;max-width:16ch">Verified help, at your door.</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:56px;flex-wrap:wrap;gap:16px;border-top:2px solid rgba(255,255,255,.35);padding-top:22px">
+        <div style="font-family:var(--font-heading);font-weight:800;font-size:22px">Handly</div>
+        <div style="font-size:13px;opacity:.8">Brand identity system · 2026</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;accentColor&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#ec3013&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#ec3013&quot;,&quot;#ff5a1f&quot;,&quot;#f04e37&quot;,&quot;#e8552d&quot;],&quot;section&quot;:&quot;Brand&quot;},
+  &quot;inkColor&quot;: {&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#201e1d&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#201e1d&quot;,&quot;#141210&quot;,&quot;#1c2431&quot;,&quot;#0f172a&quot;],&quot;section&quot;:&quot;Brand&quot;},
+  &quot;showGrid&quot;: {&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Anatomy&quot;}
+}">
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accentColor ?? '#ec3013';
+    const ink = this.props.inkColor ?? '#201e1d';
+    const showGrid = this.props.showGrid ?? true;
+    return { accent, ink, gridDisplay: showGrid ? 'block' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

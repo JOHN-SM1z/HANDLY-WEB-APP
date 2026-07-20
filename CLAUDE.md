@@ -2,12 +2,13 @@
 
 Handly is a **managed marketplace for home services in Uzbekistan** (plumber, electrician, cleaner, AC technician, handyman…). Customers describe a problem (with photos/video for free AI diagnosis), the platform auto-matches **one** verified master, and payment/warranty/incentives flow through the app. Monetization is **master subscriptions only** (no commission except a 1% tax withholding). UI is Uzbek-first (Russian second).
 
-**The architecture is the source of truth: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).** Read §0.1 for approved MVP decisions and the tax design. **Brand identity: [docs/BRAND.md](docs/BRAND.md)** (logo — do not redesign) **and [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)** (product usage: placement, colors, type, components). Build milestones in order; do not start a future milestone until the current one is approved.
+**The architecture is the source of truth: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).** Read §0.1 for approved MVP decisions and the tax design. **Brand identity: [docs/design/BRAND.md](docs/design/BRAND.md)** (logo — do not redesign) **and [docs/design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md)** (product usage: placement, colors, type, components) — ink/orange checkmark-H identity, final as of 2026-07-21; the old `docs/BRAND.md`/`docs/DESIGN_SYSTEM.md` (blue dot mark) are superseded stubs kept only so old links don't break. Build milestones in order; do not start a future milestone until the current one is approved.
 
 ## Current status
 
 - **Milestone 1 (Foundations + Auth & Profiles): DONE & verified (2026-07-19).**
 - **Milestone 2 (Requests, AI diagnosis, pricing): DONE & verified (2026-07-20).**
+- **Design system rebrand (ink/orange checkmark-H, per docs/design/): DONE (2026-07-21).** Cross-cutting UI pass, not a numbered milestone — see "What the design-system implementation shipped" below.
 - Next up is **Milestone 3 (Matching & dispatch, PostGIS, real-time offers)** — do **not** begin until the founder approves.
 
 ## Monorepo layout (pnpm workspaces + Turborepo)
@@ -77,7 +78,7 @@ pnpm db:studio        # Prisma Studio
 **Web (`apps/web`)**
 - Screens: `/login`, `/register` (Mijoz/Usta role), `/verify` (6-box OTP, resend countdown), `/forgot`, `/home` (guarded).
 - API client (`lib/api.ts`), Zustand session store (access token in memory, silent-refresh bootstrap), TanStack Query, UI kit in `components/ui`.
-- Design tokens in `packages/ui` (brand blue `#185FA5`, ink `#111418`, warm neutrals) — light + dark, theme-aware.
+- Design tokens in `packages/ui` (brand accent, ink `#111418`, warm neutrals) — light + dark, theme-aware. **Brand accent is now orange `#F26A1B`** per the 2026-07-21 rebrand (was blue `#185FA5` at M1 ship time) — see below.
 - Support contacts: single source `apps/web/lib/support.ts` (`SUPPORT_PHONES`) rendered via `<SupportContacts />` as tappable `tel:` links — auth footer + `/help` today; Admin settings (M5) must read the same constant.
 
 ## What Milestone 2 shipped
@@ -95,7 +96,19 @@ pnpm db:studio        # Prisma Studio
 - `/orders/new` — 3-step wizard (category + description + media + GPS/address → service tier + date/slot → AI quote + consent + submit), state persisted to `sessionStorage` (`lib/wizard-store.ts`) so a refresh resumes at the right step; the order itself stays server-authoritative.
 - `/orders` — list with status badges + price range. `/orders/[id]` — full detail: media, AI diagnosis, price, status timeline, conditional cancel/resume actions.
 - `/home` redesigned: real category grid (`GET /categories`), tap-through to the wizard pre-selecting that category.
-- `components/nav/bottom-nav.tsx` — 5-tab nav (Bosh/Buyurtmalar/+/Bildirishnoma/Profil) per DESIGN_SYSTEM §5; `/profile` (moved from the old `/home`) and `/notifications` (placeholder) fill out the remaining tabs.
+- `components/nav/bottom-nav.tsx` — 5-tab nav (Bosh/Buyurtmalar/+/Bildirishnoma/Profil); `/profile` (moved from the old `/home`) and `/notifications` (placeholder) fill out the remaining tabs.
+
+## What the design-system implementation shipped (2026-07-21)
+
+Cross-cutting UI pass implementing the approved design handoff — not a numbered milestone; no backend or functional changes, M1/M2 behavior preserved throughout.
+
+- **Source of truth relocated:** `docs/design/` (BRAND.md, DESIGN_SYSTEM.md, `components/COMPONENTS.md`, `tokens/handly-tokens.css`, `logos/`, `screens/*.dc.html` reference screens, `exports/`) is now canonical, copied in from the design handoff per its own manifest. The old root `docs/BRAND.md`/`docs/DESIGN_SYSTEM.md` are now 3-line stub pointers (kept only so existing links don't 404).
+- **Rebrand:** logo mark changed from an ink tile + dot-in-H to a bare two-tone mark — ink "H" whose crossbar rises into an **orange checkmark** (`#F26A1B`) — per `docs/design/BRAND.md`, which explicitly marks this final ("do not revert to blue"). Updated `packages/ui/src/tokens.css` (brand ramp + all `--color-primary*`/`--color-focus`/`--color-info*` slots), `components/ui/logo.tsx`, `app/icon.svg`. **Dark-theme brand values aren't specified upstream** (the handoff's token sheet is light-only) — retinted here by re-applying the same light→dark derivation the previous blue ramp used (one step lighter for `-hover`, dark desaturated for `-soft`, etc.), so dark mode keeps working; flag to design if they want to specify these explicitly later.
+- **Nav kept at 5 tabs:** the reference screens show a 4-tab nav (Home/Bookings/Chats/Profile, no center button) — but that drops the only visible way to reach `/orders/new` and the Notifications tab, with nothing shown to replace either. Kept the current 5-tab structure (incl. the center "+" create button) and just re-skinned colors/icons, rather than regressing that navigation path. No "Chats" tab/feature was added (no chat backend exists).
+- **New components:** `Chip` and `Rating` in `components/ui/badge.tsx`; `components/master/` (`OnlineToggle`, `RouteTimeline`, `BookingRequestCard`, `WeekEarningsChart`) for the new Master Dashboard screen.
+- **New screen — Landing (`/`):** logged-out root is now a real marketing page (`components/landing/marketing-landing.tsx`) per `Handly Landing.dc.html` — hero, real `GET /categories` service grid (real names + `basePriceMin`, not fabricated), how-it-works, trust panel, masters CTA, footer. Logged-in users still redirect straight to `/home` as before.
+- **New screen — Master Dashboard (`/master`):** static/presentational recreation of `Handly Master Dashboard.dc.html` (online toggle, incoming-request accept/decline with countdown, route timeline, weekly earnings chart). **All data and interactions are local demo state only — no backend wiring** (matching/dispatch is M3, earnings ledger is M4+, neither exists yet). Reachable via a "Usta paneli" link on `/profile`, shown only for `role === 'MASTER'`. Treat as a visual preview, not a functional dashboard, until the relevant backend milestones land.
+- **`/home` re-skinned, not re-built:** kept the real, working sections (search bar, category grid, greeting) restyled to the new palette/icons; did **not** add the reference's fabricated "active booking tracker" (hardcoded master/ETA), "top masters nearby" list, or promo banner, since Handly has no live-matching, master-ranking, or promo system yet and faking that data in a production screen would be misleading.
 
 ## Conventions & decisions
 
@@ -113,7 +126,18 @@ pnpm db:studio        # Prisma Studio
 - **Media uploads:** local disk (`LocalDiskStorage`); the S3 presign/upload pipeline is a later milestone. Same for master certifications/portfolio (M1, still `objectKey`-only).
 - **MyID / Didox / real SMS / payments / rules engine / trust tiers / warranty / admin dashboard / subscriptions:** all later milestones per the roadmap. Interfaces (SmsProvider, VerificationProvider, TaxProvider, PaymentProvider, AiProvider, StorageProvider) exist so they slot in without rework.
 - **CI/CD, ESLint config:** still not set up (`next.config` skips lint during build).
-- **Known test-environment quirk (not an app bug):** the sandboxed preview-browser tool used for manual verification blocks PATCH/PUT/DELETE at its network layer (GET/POST pass through) and drops the session on a full page reload — confirmed via direct `fetch`/`XMLHttpRequest` probing and via curl parity (identical requests succeed instantly outside that sandbox). Real browsers are unaffected. If future UI verification in that same tool hits an unexplained `net::ERR_FAILED` specifically on a non-GET/POST request, check this before assuming a regression.
+- **`/master` (Master Dashboard) is UI-only:** built as a pixel-accurate static preview (see above) — online status, live incoming-request accept/decline, route, and earnings are all local demo state, not real. Wiring it to real data needs M3 (matching/dispatch) and M4+ (earnings/wallet ledger).
+
+## Known issues
+
+Tooling/environment quirks hit during manual verification — none are application defects. Documented so future verification passes don't misdiagnose them as regressions.
+
+- **Sandboxed preview-browser blocks non-GET/POST requests:** the `mcp__Claude_Browser__*` preview tool (not real Chrome) blocks PATCH/PUT/DELETE at its network layer — GET/POST pass through fine. Confirmed via `read_network_requests` (`net::ERR_FAILED` on the PATCH call) and via curl parity (identical requests succeed instantly outside the sandbox). Work around by driving state-changing steps via curl and verifying rendering/GET/POST-only actions in the browser. Real browsers are unaffected.
+- **Same sandbox's session cookie is unreliable across a full page reload:** across two verification passes, a `location.reload()`/F5 in that sandbox sometimes dropped the session (bounced to `/login`) and sometimes didn't — confirmed via a direct `fetch('/auth/refresh', {credentials:'include'})` immediately before/after a reload, which succeeds right up to the reload event either way. This points to the sandbox's proxy/context intermittently clearing cookies on navigation, not the app's session logic. Real browsers are unaffected.
+- **Same sandbox can't drive native file pickers:** clicking a file-input control (order media upload) opens an OS-level file dialog this tool has no way to interact with (it lacks a `file_upload`-style capability, unlike the `claude-in-chrome` extension's `file_upload` tool). Media upload can't be exercised via a real UI click here — verify it instead with a direct multipart curl against `POST /orders/:id/media`.
+- **Possible React StrictMode double-fire on `/auth/refresh` in dev:** manual verification occasionally saw two back-to-back `POST /auth/refresh` calls on a single page load, one `200` and one `400`. Likely React 18 StrictMode's dev-only double-invoke of the silent-refresh bootstrap effect racing against the rotating single-use refresh token — the first call rotates the cookie, the second (using the now-stale token) is rejected. One call has always succeeded and no user-visible failure has been observed, and StrictMode's double-invoke doesn't happen in production builds. Not yet root-caused with certainty — worth a look at the session bootstrap effect in `apps/web` if it's ever seen alongside an actual visible login/session failure.
+- **`next dev`'s cache can go stale after a long run of rapid file edits:** during the 2026-07-21 design-system pass, `apps/web`'s dev server started serving a 404 for its own CSS bundle (`/_next/static/css/app/layout.css`) and every page rendered as unstyled raw HTML with a `500` on the page request — after dozens of edits to `tokens.css` and shared components in one sitting. `pnpm typecheck`/`pnpm build` were clean throughout (proving the code was fine), so this was dev-server-state corruption, not a bug. Fixed by `rm -rf apps/web/.next` + restarting `pnpm dev`. If a running dev server ever starts 404ing its own CSS or 500ing on a page it previously served fine, restart it before assuming a regression.
+- **The preview-browser screenshot tool can render a blank frame that doesn't reflect real page state:** after a JS-triggered `window.scrollTo()`, a screenshot occasionally came back solid blank (page-background-colored), even on a second attempt. `document.elementFromPoint()` + `getBoundingClientRect()` on the same page at the same scroll position showed the real content correctly laid out with no gaps — so this is a capture/rasterization timing quirk in the tool, not a real rendering bug. Don't conclude "content is missing/broken" from a single blank screenshot after scrolling — verify with `get_page_text` or direct DOM measurement first.
 
 ## Key env vars
 

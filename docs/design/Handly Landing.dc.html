@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="handly-tokens.css">
+  <style>
+    body{margin:0;background:var(--color-background-primary)}
+    a{color:var(--color-text-primary);text-decoration:none}
+    a:hover{color:var(--color-primary)}
+  </style>
+</helmet>
+<div style="background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans);min-height:100vh">
+
+  <!-- NAV -->
+  <header style="position:sticky;top:0;z-index:30;background:rgba(251,250,247,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--color-border-tertiary)">
+    <div style="max-width:1160px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:28px">
+      <span style="display:inline-flex;align-items:center;gap:10px;margin-right:auto">
+        <svg viewBox="0 0 120 120" style="width:30px;height:30px;--h:var(--color-ink);--ck:var(--color-primary)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-weight:var(--weight-bold);font-size:19px;letter-spacing:-0.02em">Handly</span>
+      </span>
+      <a href="#services" style="font-size:var(--text-sm);font-weight:var(--weight-medium)">Services</a>
+      <a href="#how" style="font-size:var(--text-sm);font-weight:var(--weight-medium)">How it works</a>
+      <a href="#trust" style="font-size:var(--text-sm);font-weight:var(--weight-medium)">Trust &amp; safety</a>
+      <a href="#masters" style="font-size:var(--text-sm);font-weight:var(--weight-medium)">For masters</a>
+      <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--color-text-secondary);cursor:pointer" style-hover="color:var(--color-primary)">Log in</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 18px;border-radius:var(--radius-md);background:var(--color-ink);color:var(--color-ink-fg);font-size:var(--text-sm);font-weight:var(--weight-medium);cursor:pointer" style-hover="opacity:.9">Book a master</span>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section style="max-width:1160px;margin:0 auto;padding:72px 28px 64px;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <span style="display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--color-primary-soft);color:var(--color-primary-soft-fg);border-radius:var(--radius-full);padding:6px 14px;font-size:var(--text-xs);font-weight:var(--weight-semibold);letter-spacing:.02em">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg>
+        Every master is verified
+      </span>
+      <h1 style="margin:0;font-size:58px;line-height:1.05;letter-spacing:-0.03em;font-weight:var(--weight-bold);text-wrap:balance">Verified help, at your door.</h1>
+      <p style="margin:0;font-size:var(--text-lg);line-height:var(--leading-relaxed);color:var(--color-text-secondary);max-width:46ch">Plumbers, electricians, cleaners and repair specialists — background-checked, rated by neighbors, and priced upfront. Across Tashkent, in about an hour.</p>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 26px;border-radius:var(--radius-md);background:var(--color-primary);color:var(--color-primary-fg);font-size:var(--text-lg);font-weight:var(--weight-bold);cursor:pointer;box-shadow:var(--shadow-card)" style-hover="background:var(--color-primary-hover)">Book a master
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </span>
+        <span style="display:inline-flex;align-items:center;height:52px;padding:0 22px;border-radius:var(--radius-md);border:1px solid var(--color-border-primary);color:var(--color-text-primary);font-size:var(--text-base);font-weight:var(--weight-medium);cursor:pointer;background:var(--color-surface)" style-hover="background:var(--color-background-secondary)">Become a master</span>
+      </div>
+      <div style="display:flex;gap:28px;margin-top:10px;flex-wrap:wrap">
+        <div><div style="font-size:var(--text-xl);font-weight:var(--weight-bold)">12,400+</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">verified masters</div></div>
+        <div style="width:1px;background:var(--color-border-secondary)"></div>
+        <div><div style="font-size:var(--text-xl);font-weight:var(--weight-bold);display:flex;align-items:center;gap:5px"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:var(--color-star);stroke:none"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg>4.9</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">average rating</div></div>
+        <div style="width:1px;background:var(--color-border-secondary)"></div>
+        <div><div style="font-size:var(--text-xl);font-weight:var(--weight-bold)">~60 min</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">median response</div></div>
+      </div>
+    </div>
+
+    <!-- booking widget mock -->
+    <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-xl);box-shadow:var(--shadow-pop);padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:var(--text-base);font-weight:var(--weight-semibold)">What needs fixing?</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:var(--text-sm);font-weight:var(--weight-medium)">Service</label>
+        <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);padding:0 12px;height:44px;background:var(--color-surface)">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:var(--color-text-muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6L14 13l-3-3z"/></svg>
+          <span style="font-size:var(--text-sm)">Plumbing — leak repair</span>
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;margin-left:auto;fill:none;stroke:var(--color-text-muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:var(--text-sm);font-weight:var(--weight-medium)">Address</label>
+        <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);padding:0 12px;height:44px">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:var(--color-text-muted);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+          <span style="font-size:var(--text-sm);color:var(--color-text-secondary)">Yunusobod district, Tashkent</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--color-background-secondary);border-radius:var(--radius-md);padding:12px 14px">
+        <span style="font-size:var(--text-sm);color:var(--color-text-secondary)">Upfront price</span>
+        <span style="font-size:var(--text-base);font-weight:var(--weight-bold)">from 120,000 so'm</span>
+      </div>
+      <span style="display:inline-flex;align-items:center;justify-content:center;height:48px;border-radius:var(--radius-md);background:var(--color-ink);color:var(--color-ink-fg);font-size:var(--text-base);font-weight:var(--weight-semibold);cursor:pointer" style-hover="opacity:.9">See available masters</span>
+      <div style="display:flex;align-items:center;gap:8px;font-size:var(--text-xs);color:var(--color-text-muted)">
+        <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:var(--color-success-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg>
+        Free cancellation up to 2 hours before the visit
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services" style="max-width:1160px;margin:0 auto;padding:40px 28px 64px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px">
+      <h2 style="margin:0;font-size:var(--text-3xl);letter-spacing:-0.02em;font-weight:var(--weight-bold)">What can we handle?</h2>
+      <span style="font-size:var(--text-sm);font-weight:var(--weight-medium);color:var(--color-primary);cursor:pointer">All 40+ services →</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 6L3 18l3 3 5.7-5.7a4.5 4.5 0 0 0 6-6L14 13l-3-3z"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Plumbing</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 80,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Electrical</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 70,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20l8-16M8 20l6-12M12 20l4-8M16 20l2-4"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Cleaning</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 150,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M9 14h6"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Appliance repair</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 90,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M9.6 4.6a2 2 0 1 1 3.4 1.4L8 11h9a2 2 0 1 1 0 4h-1M6 15a2 2 0 1 0 2 2v-1"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">AC &amp; heating</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 110,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3zM14 4l2-2 4 4-2 2"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Painting</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 200,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Handyman</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 60,000 so'm</div></div>
+      </div>
+      <div style="background:var(--color-surface);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:var(--shadow-card)" style-hover="border-color:var(--color-primary)">
+        <span style="width:38px;height:38px;border-radius:var(--radius-md);background:var(--color-primary-soft);color:var(--color-primary-soft-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><rect x="2" y="7" width="14" height="10" rx="1.5"/><path d="M16 10h3l3 3v4h-6zM7.5 20a1.8 1.8 0 1 0 0-.01M17.5 20a1.8 1.8 0 1 0 0-.01"/></svg></span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Moving help</div><div style="font-size:var(--text-xs);color:var(--color-text-muted)">from 250,000 so'm</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" style="background:var(--color-surface);border-top:1px solid var(--color-border-tertiary);border-bottom:1px solid var(--color-border-tertiary)">
+    <div style="max-width:1160px;margin:0 auto;padding:64px 28px">
+      <h2 style="margin:0 0 32px;font-size:var(--text-3xl);letter-spacing:-0.02em;font-weight:var(--weight-bold)">Fixed in three steps.</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:22px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg)">
+          <span style="width:32px;height:32px;border-radius:var(--radius-full);background:var(--color-ink);color:var(--color-ink-fg);display:grid;place-items:center;font-size:var(--text-sm);font-weight:var(--weight-bold)">1</span>
+          <div style="font-size:var(--text-base);font-weight:var(--weight-semibold)">Tell us what broke</div>
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-normal)">Pick the service, add a photo if you like, choose a time that suits you.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:22px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg)">
+          <span style="width:32px;height:32px;border-radius:var(--radius-full);background:var(--color-ink);color:var(--color-ink-fg);display:grid;place-items:center;font-size:var(--text-sm);font-weight:var(--weight-bold)">2</span>
+          <div style="font-size:var(--text-base);font-weight:var(--weight-semibold)">Get a verified master</div>
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-normal)">We match you with an ID-checked, skill-tested professional nearby — with a rating you can read.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;padding:22px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);border-radius:var(--radius-lg)">
+          <span style="width:32px;height:32px;border-radius:var(--radius-full);background:var(--color-primary);color:var(--color-primary-fg);display:grid;place-items:center"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg></span>
+          <div style="font-size:var(--text-base);font-weight:var(--weight-semibold)">Pay the price you saw</div>
+          <p style="margin:0;font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-normal)">The upfront price is the final price. Pay in the app when the job checks out.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST -->
+  <section id="trust" style="max-width:1160px;margin:0 auto;padding:64px 28px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <h2 style="margin:0;font-size:var(--text-3xl);letter-spacing:-0.02em;font-weight:var(--weight-bold)">Every master checks out.</h2>
+      <p style="margin:0;font-size:var(--text-base);color:var(--color-text-secondary);line-height:var(--leading-relaxed)">The checkmark in our logo is a promise, not a decoration. Nobody works on Handly until they've passed all four checks — and every job is covered.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
+        <div style="display:flex;gap:12px;align-items:center"><span style="width:26px;height:26px;border-radius:var(--radius-full);background:var(--color-success-bg);color:var(--color-success-fg);display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg></span><span style="font-size:var(--text-sm)"><strong style="font-weight:var(--weight-semibold)">Identity verified</strong> — passport + face match</span></div>
+        <div style="display:flex;gap:12px;align-items:center"><span style="width:26px;height:26px;border-radius:var(--radius-full);background:var(--color-success-bg);color:var(--color-success-fg);display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg></span><span style="font-size:var(--text-sm)"><strong style="font-weight:var(--weight-semibold)">Skill-tested</strong> — practical exam in their trade</span></div>
+        <div style="display:flex;gap:12px;align-items:center"><span style="width:26px;height:26px;border-radius:var(--radius-full);background:var(--color-success-bg);color:var(--color-success-fg);display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg></span><span style="font-size:var(--text-sm)"><strong style="font-weight:var(--weight-semibold)">Work guaranteed</strong> — up to 10,000,000 so'm damage cover</span></div>
+        <div style="display:flex;gap:12px;align-items:center"><span style="width:26px;height:26px;border-radius:var(--radius-full);background:var(--color-success-bg);color:var(--color-success-fg);display:grid;place-items:center;flex:none"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"><path d="M20 6L9 17l-5-5"/></svg></span><span style="font-size:var(--text-sm)"><strong style="font-weight:var(--weight-semibold)">Rated after every job</strong> — below 4.6 means retraining</span></div>
+      </div>
+    </div>
+    <div style="background:var(--color-ink);border-radius:var(--radius-xl);padding:40px;display:flex;flex-direction:column;gap:20px;color:var(--color-ink-fg)">
+      <svg viewBox="0 0 120 120" style="width:56px;height:56px;--h:#fff;--ck:var(--color-primary)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div style="font-size:26px;font-weight:var(--weight-bold);letter-spacing:-0.02em;line-height:1.25">"The master arrived in 40 minutes, fixed the leak, and the price didn't move a single so'm."</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="width:38px;height:38px;border-radius:var(--radius-full);background:var(--color-primary);color:#fff;display:grid;place-items:center;font-size:var(--text-sm);font-weight:var(--weight-bold)">MK</span>
+        <div><div style="font-size:var(--text-sm);font-weight:var(--weight-semibold)">Malika K.</div><div style="font-size:var(--text-xs);opacity:.7">Chilonzor, Tashkent</div></div>
+        <span style="margin-left:auto;display:inline-flex;gap:2px"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--color-star)"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--color-star)"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--color-star)"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--color-star)"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:var(--color-star)"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.5-6.1 3.5 1.4-6.8L2.2 9.1l6.9-.8z"/></svg></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOR MASTERS CTA -->
+  <section id="masters" style="max-width:1160px;margin:0 auto;padding:0 28px 72px">
+    <div style="background:var(--color-primary);border-radius:var(--radius-xl);padding:48px;display:flex;align-items:center;gap:32px;flex-wrap:wrap">
+      <div style="flex:1;min-width:300px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:34px;font-weight:var(--weight-bold);letter-spacing:-0.02em;color:#fff">Good with your hands? Get steady work.</div>
+        <p style="margin:0;font-size:var(--text-base);color:rgba(255,255,255,.9);line-height:var(--leading-normal);max-width:52ch">Masters on Handly earn 40% more than solo — with jobs nearby, instant payouts, and zero chasing clients.</p>
+      </div>
+      <span style="display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 26px;border-radius:var(--radius-md);background:var(--color-ink);color:var(--color-ink-fg);font-size:var(--text-lg);font-weight:var(--weight-bold);cursor:pointer;flex:none" style-hover="opacity:.9">Apply as a master</span>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="background:var(--color-surface);border-top:1px solid var(--color-border-tertiary)">
+    <div style="max-width:1160px;margin:0 auto;padding:36px 28px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;gap:9px;margin-right:auto">
+        <svg viewBox="0 0 120 120" style="width:24px;height:24px;--h:var(--color-ink);--ck:var(--color-primary)"><rect x="26" y="24" width="16" height="72" rx="3" fill="var(--h)"/><rect x="78" y="24" width="16" height="72" rx="3" fill="var(--h)"/><path d="M39 56 L54 69 L81 40" fill="none" stroke="var(--ck)" stroke-width="15.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-weight:var(--weight-bold);font-size:var(--text-base)">Handly</span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted);margin-left:8px">© 2026 · Tashkent, Uzbekistan</span>
+      </span>
+      <a href="#services" style="font-size:var(--text-xs);color:var(--color-text-secondary)">Services</a>
+      <a href="#trust" style="font-size:var(--text-xs);color:var(--color-text-secondary)">Trust &amp; safety</a>
+      <a href="#masters" style="font-size:var(--text-xs);color:var(--color-text-secondary)">For masters</a>
+      <span style="font-size:var(--text-xs);color:var(--color-text-secondary)">O'zbekcha · Русский · English</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+</body>
+</html>

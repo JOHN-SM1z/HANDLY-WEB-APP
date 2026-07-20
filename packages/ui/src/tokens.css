@@ -1,21 +1,23 @@
 /*
- * Handly design tokens — derived from the MVP wireframe palette.
- * Brand accent: blue #185FA5. Primary CTAs: ink #111418. Warm-neutral grounds.
+ * Handly design tokens — per docs/design/tokens/handly-tokens.css (final, 2026-07-21).
+ * Brand accent: orange #F26A1B. Primary CTAs: ink #111418. Warm-neutral grounds.
  * Semantic roles are theme-aware: light is the default, dark overrides via
  * prefers-color-scheme and the data-theme attribute (which always wins).
+ * Dark-mode brand values are not specified upstream (the source sheet is light-only);
+ * they're derived here by retinting the same steps the previous blue ramp used.
  */
 :root {
-  /* Brand blue scale (static) */
-  --brand-50: #e6f1fb;
-  --brand-100: #cfe3f5;
-  --brand-200: #a9cdec;
-  --brand-300: #7fb2e0;
-  --brand-400: #4c90cf;
-  --brand-500: #185fa5;
-  --brand-600: #12507f; /* wireframe deep blue */
-  --brand-700: #0c447c;
-  --brand-800: #0a3560;
-  --brand-900: #072a4d;
+  /* Brand orange scale (static) */
+  --brand-50: #fff4ec;
+  --brand-100: #ffe6d3;
+  --brand-200: #ffc9a5;
+  --brand-300: #fca66d;
+  --brand-400: #f8843c;
+  --brand-500: #f26a1b;
+  --brand-600: #dd560f;
+  --brand-700: #b8420c;
+  --brand-800: #92350f;
+  --brand-900: #772c11;
 
   /* Warm neutral scale (static) */
   --neutral-50: #faf9f6;
@@ -47,16 +49,16 @@
   --color-border-secondary: #e4e1d7;
   --color-border-tertiary: #ece9e1;
 
-  --color-primary: #185fa5;
-  --color-primary-hover: #12507f;
+  --color-primary: #f26a1b;
+  --color-primary-hover: #dd560f;
   --color-primary-fg: #ffffff;
-  --color-primary-soft: #e6f1fb;
-  --color-primary-soft-fg: #0c447c;
+  --color-primary-soft: #ffe9d8;
+  --color-primary-soft-fg: #8f3410;
 
   --color-ink: #111418;
   --color-ink-fg: #ffffff;
 
-  --color-focus: #185fa5;
+  --color-focus: #f26a1b;
 
   /* Status colors (fg = text/icon, bg = subtle fill) */
   --color-success-fg: #27500a;
@@ -66,8 +68,8 @@
   --color-danger-fg: #791f1f;
   --color-danger-bg: #fcebeb;
   --color-danger-solid: #e24b4a;
-  --color-info-fg: #0c447c;
-  --color-info-bg: #e6f1fb;
+  --color-info-fg: #8f3410;
+  --color-info-bg: #ffe9d8;
   --color-star: #ef9f27;
 
   /* Radii & elevation */
@@ -79,6 +81,12 @@
   --shadow-pop: 0 8px 24px rgba(17, 20, 24, 0.12);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── DARK: system preference (overridden by [data-theme] below) ── */
@@ -98,16 +106,16 @@
     --color-border-secondary: #2c313a;
     --color-border-tertiary: #262b33;
 
-    --color-primary: #4c90cf;
-    --color-primary-hover: #7fb2e0;
-    --color-primary-fg: #0a1420;
-    --color-primary-soft: #16324c;
-    --color-primary-soft-fg: #bcdcf6;
+    --color-primary: #f8843c;
+    --color-primary-hover: #fca66d;
+    --color-primary-fg: #14161a;
+    --color-primary-soft: #3a2211;
+    --color-primary-soft-fg: #ffc9a5;
 
     --color-ink: #f2f3f5;
     --color-ink-fg: #14161a;
 
-    --color-focus: #7fb2e0;
+    --color-focus: #fca66d;
 
     --color-success-fg: #bfe39a;
     --color-success-bg: #1f2c17;
@@ -116,8 +124,8 @@
     --color-danger-fg: #f2b4b4;
     --color-danger-bg: #2e1717;
     --color-danger-solid: #e24b4a;
-    --color-info-fg: #bcdcf6;
-    --color-info-bg: #16324c;
+    --color-info-fg: #ffc9a5;
+    --color-info-bg: #3a2211;
     --color-star: #f0b74a;
   }
 }
@@ -135,22 +143,22 @@
   --color-border-primary: #cfcbbe;
   --color-border-secondary: #e4e1d7;
   --color-border-tertiary: #ece9e1;
-  --color-primary: #185fa5;
-  --color-primary-hover: #12507f;
+  --color-primary: #f26a1b;
+  --color-primary-hover: #dd560f;
   --color-primary-fg: #ffffff;
-  --color-primary-soft: #e6f1fb;
-  --color-primary-soft-fg: #0c447c;
+  --color-primary-soft: #ffe9d8;
+  --color-primary-soft-fg: #8f3410;
   --color-ink: #111418;
   --color-ink-fg: #ffffff;
-  --color-focus: #185fa5;
+  --color-focus: #f26a1b;
   --color-success-fg: #27500a;
   --color-success-bg: #eaf3de;
   --color-warning-fg: #633806;
   --color-warning-bg: #faeeda;
   --color-danger-fg: #791f1f;
   --color-danger-bg: #fcebeb;
-  --color-info-fg: #0c447c;
-  --color-info-bg: #e6f1fb;
+  --color-info-fg: #8f3410;
+  --color-info-bg: #ffe9d8;
   --color-star: #ef9f27;
 }
 
@@ -167,21 +175,21 @@
   --color-border-primary: #3a3f48;
   --color-border-secondary: #2c313a;
   --color-border-tertiary: #262b33;
-  --color-primary: #4c90cf;
-  --color-primary-hover: #7fb2e0;
-  --color-primary-fg: #0a1420;
-  --color-primary-soft: #16324c;
-  --color-primary-soft-fg: #bcdcf6;
+  --color-primary: #f8843c;
+  --color-primary-hover: #fca66d;
+  --color-primary-fg: #14161a;
+  --color-primary-soft: #3a2211;
+  --color-primary-soft-fg: #ffc9a5;
   --color-ink: #f2f3f5;
   --color-ink-fg: #14161a;
-  --color-focus: #7fb2e0;
+  --color-focus: #fca66d;
   --color-success-fg: #bfe39a;
   --color-success-bg: #1f2c17;
   --color-warning-fg: #f0cf9a;
   --color-warning-bg: #2e2413;
   --color-danger-fg: #f2b4b4;
   --color-danger-bg: #2e1717;
-  --color-info-fg: #bcdcf6;
-  --color-info-bg: #16324c;
+  --color-info-fg: #ffc9a5;
+  --color-info-bg: #3a2211;
   --color-star: #f0b74a;
 }

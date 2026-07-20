@@ -1,0 +1,50 @@
+/* Handly design tokens — Handly Design System, brand ramp re-toned to Handly Orange
+   (the starter ships blue; the brand is vibrant orange + charcoal). Token NAMES are
+   unchanged so every screen stays systematic — only the brand values move. Light only. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  color-scheme:light;
+
+  /* Brand — Handly Orange */
+  --brand-50:#fff4ec;--brand-100:#ffe6d3;--brand-200:#ffc9a5;--brand-300:#fca66d;--brand-400:#f8843c;
+  --brand-500:#f26a1b;--brand-600:#dd560f;--brand-700:#b8420c;--brand-800:#92350f;--brand-900:#772c11;
+
+  /* Neutrals — warm charcoal/stone */
+  --neutral-50:#faf9f6;--neutral-100:#f1efe8;--neutral-200:#e4e1d7;--neutral-300:#cfcbbe;--neutral-400:#a8a394;
+  --neutral-500:#8a8677;--neutral-600:#6a675c;--neutral-700:#57544b;--neutral-800:#35332d;--neutral-900:#1c1b18;
+  --ink:#111418;
+
+  --color-background-primary:#fbfaf7;--color-background-secondary:#f1efe8;
+  --color-surface:#ffffff;--color-surface-raised:#ffffff;
+  --color-text-primary:#1c1b18;--color-text-secondary:#57544b;--color-text-muted:#8a8677;--color-text-inverse:#ffffff;
+  --color-border-primary:#cfcbbe;--color-border-secondary:#e4e1d7;--color-border-tertiary:#ece9e1;
+
+  --color-primary:#f26a1b;--color-primary-hover:#dd560f;--color-primary-fg:#ffffff;
+  --color-primary-soft:#ffe9d8;--color-primary-soft-fg:#8f3410;
+  --color-ink:#111418;--color-ink-fg:#ffffff;
+  --color-focus:#f26a1b;
+
+  --color-success-fg:#27500a;--color-success-bg:#eaf3de;
+  --color-warning-fg:#633806;--color-warning-bg:#faeeda;
+  --color-danger-fg:#791f1f;--color-danger-bg:#fcebeb;--color-danger-solid:#e24b4a;
+  --color-info-fg:#8f3410;--color-info-bg:#ffe9d8;
+  --color-star:#ef9f27;
+
+  /* Type */
+  --font-sans:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  --text-xs:12px;--text-sm:14px;--text-base:16px;--text-lg:18px;--text-xl:20px;--text-2xl:24px;--text-3xl:30px;
+  --leading-tight:1.2;--leading-normal:1.5;--leading-relaxed:1.6;
+  --weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;
+
+  /* Spacing */
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;
+  --space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--container-max:448px;
+
+  /* Effects */
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;--radius-full:9999px;
+  --shadow-card:0 1px 2px rgba(17,20,24,0.06),0 1px 3px rgba(17,20,24,0.04);
+  --shadow-pop:0 8px 24px rgba(17,20,24,0.12);
+  --ease-standard:cubic-bezier(0.4,0,0.2,1);--duration-fast:120ms;--duration-normal:180ms;
+}
+*,*::before,*::after{box-sizing:border-box}
