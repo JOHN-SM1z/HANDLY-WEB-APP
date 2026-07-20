@@ -26,6 +26,18 @@ export const envSchema = z.object({
 
   TAX_PROVIDER: z.enum(['mock', 'soliq']).default('mock'),
   TAX_WITHHOLDING_RATE: z.coerce.number().min(0).max(1).default(0.01),
+
+  // AI diagnosis (M2). "mock" needs no key; "claude" requires ANTHROPIC_API_KEY.
+  AI_PROVIDER: z.enum(['mock', 'claude']).default('mock'),
+  ANTHROPIC_API_KEY: z.string().default(''),
+  AI_MODEL: z.string().default('claude-opus-4-8'),
+  AI_TIMEOUT_MS: z.coerce.number().int().positive().default(12000),
+
+  // Media uploads (local disk in dev; S3 provider slots in later).
+  UPLOAD_DIR: z.string().default('./uploads'),
+  UPLOAD_MAX_PHOTO_MB: z.coerce.number().positive().default(10),
+  UPLOAD_MAX_VIDEO_MB: z.coerce.number().positive().default(50),
+  ORDER_MAX_MEDIA: z.coerce.number().int().positive().default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

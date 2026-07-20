@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import fastifyCookie from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 import { config as loadDotenv } from 'dotenv';
 import { AppModule } from './app.module';
 import { ProblemExceptionFilter } from './common/http/problem.filter';
@@ -21,6 +22,13 @@ async function bootstrap(): Promise<void> {
   );
 
   await app.register(fastifyCookie);
+  await app.register(fastifyMultipart, {
+    limits: {
+      // Route-level validation applies the exact per-kind caps (photo vs video).
+      fileSize: env.UPLOAD_MAX_VIDEO_MB * 1024 * 1024,
+      files: 1,
+    },
+  });
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new ProblemExceptionFilter());
   app.enableCors({ origin: env.WEB_ORIGIN, credentials: true });

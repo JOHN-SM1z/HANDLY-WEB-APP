@@ -71,6 +71,41 @@ enum DevicePlatform {
   IOS
 }
 
+enum ServiceTier {
+  SCHEDULED
+  PRIORITY
+  EMERGENCY
+}
+
+enum Complexity {
+  SIMPLE
+  MEDIUM
+  COMPLEX
+  CRITICAL
+}
+
+// Full lifecycle per ARCHITECTURE §orders; M2 implements DRAFT→PRICED→SEARCHING
+// (+ customer cancel). Later milestones use the remaining states.
+enum OrderStatus {
+  DRAFT
+  PRICED
+  SEARCHING
+  ASSIGNED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CLOSED
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_MASTER
+  EXPIRED
+  DISPUTED
+}
+
+enum OrderMediaKind {
+  PHOTO
+  VIDEO
+}
+
 // ─────────────────────────── Identity ───────────────────────────
 model User {
   id           String     @id @default(uuid()) @db.Uuid
@@ -88,6 +123,7 @@ model User {
   sessions        Session[]
   devices         Device[]
   addresses       Address[]
+  orders          Order[]
 
   @@map("users")
 }
@@ -143,6 +179,7 @@ model ServiceCategory {
   createdAt        DateTime      @default(now())
 
   masterSkills MasterSkill[]
+  orders       Order[]
 
   @@map("service_categories")
 }
@@ -275,4 +312,69 @@ model Device {
 
   @@index([userId])
   @@map("devices")
+}
+
+// ─────────────────────────── Orders (M2) ───────────────────────────
+model Order {
+  id          String          @id @default(uuid()) @db.Uuid
+  orderNo     Int             @unique @default(autoincrement())
+  customerId  String          @db.Uuid
+  customer    User            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  categoryId  String?         @db.Uuid
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description String
+  status      OrderStatus     @default(DRAFT)
+  serviceTier ServiceTier     @default(SCHEDULED)
+  scheduledAt DateTime?
+  // Address snapshot (deliberate denormalization — order keeps the address as it was).
+  addressText String?
+  latitude    Decimal?        @db.Decimal(9, 6)
+  longitude   Decimal?        @db.Decimal(9, 6)
+  // AI-assisted quote
+  complexity  Complexity?
+  aiDiagnosis Json?
+  priceMin    Int?
+  priceMax    Int?
+  platformFee Int             @default(0)
+  // Lifecycle timestamps
+  consentAcceptedAt DateTime?
+  submittedAt DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  media         OrderMedia[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([customerId, createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderMedia {
+  id        String         @id @default(uuid()) @db.Uuid
+  orderId   String         @db.Uuid
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind      OrderMediaKind
+  objectKey String
+  mime      String
+  sizeBytes Int
+  createdAt DateTime       @default(now())
+
+  @@index([orderId])
+  @@map("order_media")
+}
+
+model OrderStatusHistory {
+  id         String       @id @default(uuid()) @db.Uuid
+  orderId    String       @db.Uuid
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actorId    String?      @db.Uuid
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_status_history")
 }
