@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { BookingRequestCard } from '@/components/master/booking-request-card';
 import { OnlineToggle } from '@/components/master/online-toggle';
@@ -157,7 +158,12 @@ export default function MasterDashboardPage() {
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col bg-background">
       {/* dark header */}
       <div className="bg-ink text-ink-fg">
-        <div className="flex items-center gap-3 px-5 pb-4 pt-3">
+        <div className="flex items-center px-5 pt-3">
+          <Link href="/home" aria-label="Bosh sahifa">
+            <Logo size={22} inverse />
+          </Link>
+        </div>
+        <div className="flex items-center gap-3 px-5 pb-4 pt-2">
           <span className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-full bg-primary text-base font-bold text-white">
             BT
           </span>
