@@ -1,6 +1,18 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../infra/prisma/prisma.service';
 
+/**
+ * Upper bound on any `ServiceArea.radiusM` (Zod-validated max, see
+ * `packages/contracts/src/user.ts`). Used only as a coarse, constant-radius
+ * `ST_DWithin` pre-filter below — PostGIS can drive the GIST index on
+ * `centerPoint` for a *constant* radius, but not for the exact per-row
+ * `radiusM * multiplier` check (a radius that varies per row defeats index
+ * usage entirely, forcing a full seq scan of `service_areas` — confirmed via
+ * EXPLAIN ANALYZE). The exact check stays as the correctness-authoritative
+ * filter; this constant only narrows what Postgres has to exact-check.
+ */
+const SERVICE_AREA_MAX_RADIUS_M = 50_000;
+
 export interface EligibleCandidate {
   masterId: string;
   distanceM: number;
@@ -50,6 +62,9 @@ export async function findEligibleCandidates(
       CROSS JOIN orders o
       WHERE o.id = ${orderId}::uuid
         AND o."location" IS NOT NULL
+        -- Constant-radius pre-filter (index-only-scannable via the GIST index on
+        -- centerPoint) ahead of the exact per-row check below.
+        AND ST_DWithin(sa."centerPoint", o."location", ${SERVICE_AREA_MAX_RADIUS_M * radiusMultiplier}::float)
         AND ST_DWithin(sa."centerPoint", o."location", sa."radiusM" * ${radiusMultiplier}::float)
         AND mp."verificationStatus" = 'VERIFIED'
         AND mp."isOnline" = true

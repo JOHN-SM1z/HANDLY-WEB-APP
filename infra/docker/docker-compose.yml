@@ -29,6 +29,12 @@ services:
     image: redis:7-alpine
     container_name: handly-redis
     restart: unless-stopped
+    # AOF (fsync every second) so BullMQ dispatch jobs — offer-expiry timers in
+    # particular — survive an unclean crash, not just a graceful restart. RDB
+    # snapshots alone (the image's default) only save on a schedule (see the
+    # default `save` points), so a hard kill between snapshots silently drops
+    # any jobs enqueued since the last one.
+    command: redis-server --appendonly yes --appendfsync everysec
     ports:
       - "6379:6379"
     volumes:
