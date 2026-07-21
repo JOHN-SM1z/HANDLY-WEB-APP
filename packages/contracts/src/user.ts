@@ -45,6 +45,30 @@ export const masterProfileUpdateSchema = z.object({
 });
 export type MasterProfileUpdate = z.infer<typeof masterProfileUpdateSchema>;
 
+export interface MasterProfileDto {
+  fullName: string | null;
+  experienceYears: number;
+  bio: string | null;
+  verificationStatus: VerificationStatus;
+  trustTier: number;
+  ratingAvg: number;
+  jobsDone: number;
+  /** Real-time presence (M3) — the master's own working-hours declaration. */
+  isOnline: boolean;
+  onlineSince: string | null;
+  isSelfEmployed: boolean;
+  pinflSet: boolean;
+  skills: Array<{ categoryId: string; slug: string; nameUz: string; nameRu: string }>;
+  serviceAreas: Array<{ id: string; label: string; centerLat: number; centerLng: number; radiusM: number }>;
+  media: Array<{
+    id: string;
+    kind: 'CERTIFICATION' | 'PORTFOLIO';
+    objectKey: string;
+    caption: string | null;
+    adminApproved: boolean;
+  }>;
+}
+
 export const VerificationStatus = {
   UNVERIFIED: 'UNVERIFIED',
   PENDING: 'PENDING',

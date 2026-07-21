@@ -174,6 +174,14 @@ export interface OrderStatusHistoryDto {
   createdAt: string;
 }
 
+/** Populated once an offer is accepted (M3) — null before ASSIGNED. */
+export interface OrderMasterDto {
+  id: string;
+  fullName: string | null;
+  ratingAvg: number;
+  jobsDone: number;
+}
+
 export interface OrderDto {
   id: string;
   orderNo: number;
@@ -193,6 +201,7 @@ export interface OrderDto {
   platformFee: number;
   media: OrderMediaDto[];
   history: OrderStatusHistoryDto[];
+  master: OrderMasterDto | null;
   createdAt: string;
   submittedAt: string | null;
 }

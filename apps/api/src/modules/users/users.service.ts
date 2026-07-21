@@ -3,6 +3,7 @@ import type { MasterMediaKind, Prisma } from '@prisma/client';
 import type {
   AddressCreate,
   CustomerProfileUpdate,
+  MasterAvailabilityDto,
   MasterProfileUpdate,
 } from '@handly/contracts';
 import { FieldCrypto } from '../../infra/crypto/field-crypto';
@@ -69,6 +70,8 @@ export class UsersService {
       trustTier: master.trustTier,
       ratingAvg: Number(master.ratingAvg),
       jobsDone: master.jobsDone,
+      isOnline: master.isOnline,
+      onlineSince: master.onlineSince?.toISOString() ?? null,
       isSelfEmployed: master.isSelfEmployed,
       pinflSet: master.pinflEncrypted != null,
       skills: master.skills.map((s) => ({
@@ -92,6 +95,15 @@ export class UsersService {
         adminApproved: m.adminApproved,
       })),
     };
+  }
+
+  /** Real-time online/offline toggle (M3) — the master's own working-hours declaration. */
+  async setMasterAvailability(userId: string, isOnline: boolean): Promise<MasterAvailabilityDto> {
+    const master = await this.prisma.masterProfile.update({
+      where: { userId },
+      data: { isOnline, onlineSince: isOnline ? new Date() : null },
+    });
+    return { isOnline: master.isOnline, onlineSince: master.onlineSince?.toISOString() ?? null };
   }
 
   async updateMasterProfile(userId: string, dto: MasterProfileUpdate) {

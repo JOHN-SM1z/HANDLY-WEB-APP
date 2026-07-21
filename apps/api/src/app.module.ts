@@ -5,9 +5,13 @@ import { CryptoModule } from './infra/crypto/crypto.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
 import { StorageModule } from './infra/storage/storage.module';
+import { QueueModule } from './infra/queue/queue.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { DispatchModule } from './modules/dispatch/dispatch.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import { TaxModule } from './modules/tax/tax.module';
 import { UsersModule } from './modules/users/users.module';
 
@@ -16,13 +20,17 @@ import { UsersModule } from './modules/users/users.module';
     AppConfigModule,
     PrismaModule,
     RedisModule,
+    QueueModule,
     CryptoModule,
     StorageModule,
     TaxModule,
     AuthModule,
+    RealtimeModule,
+    NotificationsModule,
     UsersModule,
     CatalogModule,
     OrdersModule,
+    DispatchModule,
   ],
   controllers: [HealthController],
 })

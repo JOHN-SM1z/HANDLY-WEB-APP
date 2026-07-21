@@ -2,14 +2,17 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { OfferDto } from '@handly/contracts';
 import { BookingRequestCard } from '@/components/master/booking-request-card';
 import { OnlineToggle } from '@/components/master/online-toggle';
 import { RouteTimeline, type TimelineItem } from '@/components/master/route-timeline';
-import { WeekEarningsChart } from '@/components/master/week-earnings-chart';
-import { Button } from '@/components/ui/button';
 import { CheckIcon, DropletIcon, PhoneIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { Rating } from '@/components/ui/badge';
+import { formatSom } from '@/lib/format';
+import { masterApi } from '@/lib/master';
+import { useSocketEvent } from '@/lib/socket';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
 const NAV_ITEMS = [
@@ -38,7 +41,6 @@ const NAV_ITEMS = [
   {
     label: 'Suhbatlar',
     active: false,
-    badge: 2,
     icon: (
       <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1-5a8.3 8.3 0 0 1-1-4A8.4 8.4 0 0 1 11.5 3a8.4 8.4 0 0 1 9.5 8.5z" />
@@ -57,42 +59,83 @@ const NAV_ITEMS = [
   },
 ];
 
-const ROUTE_BASE: TimelineItem[] = [
-  {
-    id: 'done-1',
-    title: 'Qozon o‘rnatish — Mirzo Ulug‘bek',
-    time: '09:00',
-    meta: "To'landi · 180 000 so'm · baho ★5",
-    status: 'done',
-  },
-  {
-    id: 'done-2',
-    title: 'Radiatorni puflash — Shayxontohur',
-    time: '11:30',
-    meta: "To'landi · 95 000 so'm · baho ★5",
-    status: 'done',
-  },
-];
+function initialsOf(fullName: string | null, phone: string): string {
+  if (fullName) {
+    const parts = fullName.trim().split(/\s+/);
+    return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || fullName.slice(0, 2).toUpperCase();
+  }
+  return phone.slice(-2);
+}
 
 /**
- * Static, presentational recreation of docs/design/Handly Master Dashboard.dc.html.
- * No backend wiring — matching/dispatch and earnings ledgers are later milestones (M3/M4).
- * All state below (online status, incoming request, route) is local demo state only.
+ * Real Master Dashboard (M3) — was a static/presentational demo; now wired to
+ * the dispatch API + socket events. No fabricated earnings/route data: the
+ * old "340k today / 3-5 jobs / 98% acceptance" stat strip and weekly chart
+ * are gone since no wallet/earnings ledger exists until M4 — replaced with
+ * the master's real lifetime rating + completed-jobs count.
  */
 export default function MasterDashboardPage() {
   const { ready, user } = useRequireAuth();
+  const queryClient = useQueryClient();
+  const [countdown, setCountdown] = useState<number | null>(null);
 
-  const [online, setOnline] = useState(true);
-  const [requestState, setRequestState] = useState<'pending' | 'accepted' | 'declined'>('pending');
-  const [countdown, setCountdown] = useState(42);
+  const { data: profile } = useQuery({
+    queryKey: ['master', 'profile'],
+    queryFn: masterApi.getProfile,
+    enabled: Boolean(user),
+  });
+  const { data: offer } = useQuery({
+    queryKey: ['master', 'offer'],
+    queryFn: masterApi.getCurrentOffer,
+    enabled: Boolean(user) && profile?.isOnline === true,
+  });
+  const { data: currentJob } = useQuery({
+    queryKey: ['master', 'current-job'],
+    queryFn: masterApi.getCurrentJob,
+    enabled: Boolean(user),
+  });
+
+  useSocketEvent<OfferDto>('offer:received', (payload) => {
+    queryClient.setQueryData(['master', 'offer'], payload);
+  });
+  useSocketEvent('order:updated', () => {
+    queryClient.invalidateQueries({ queryKey: ['master', 'current-job'] });
+  });
+
+  const toggleAvailability = useMutation({
+    mutationFn: (isOnline: boolean) => masterApi.setAvailability({ isOnline }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['master', 'profile'], (prev: typeof profile) =>
+        prev ? { ...prev, ...updated } : prev,
+      );
+      if (!updated.isOnline) queryClient.setQueryData(['master', 'offer'], null);
+    },
+  });
+
+  const acceptOffer = useMutation({
+    mutationFn: (dispatchId: string) => masterApi.acceptOffer(dispatchId),
+    onSuccess: () => {
+      queryClient.setQueryData(['master', 'offer'], null);
+      void queryClient.invalidateQueries({ queryKey: ['master', 'current-job'] });
+    },
+  });
+  const declineOffer = useMutation({
+    mutationFn: (dispatchId: string) => masterApi.declineOffer(dispatchId),
+    onSuccess: () => queryClient.setQueryData(['master', 'offer'], null),
+  });
 
   useEffect(() => {
-    if (!online || requestState !== 'pending' || countdown <= 0) return;
-    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [online, requestState, countdown]);
+    if (!offer) {
+      setCountdown(null);
+      return;
+    }
+    const tick = () => setCountdown(Math.max(0, Math.round((new Date(offer.expiresAt).getTime() - Date.now()) / 1000)));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [offer]);
 
-  if (!ready || !user) {
+  if (!ready || !user || !profile) {
     return (
       <main className="flex min-h-[100dvh] items-center justify-center">
         <div className="animate-pulse">
@@ -102,7 +145,6 @@ export default function MasterDashboardPage() {
     );
   }
 
-  const showRequest = online && requestState === 'pending' && countdown > 0;
   const currentJobActions = (
     <div className="mt-2.5 flex gap-2">
       <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm bg-ink text-xs font-semibold text-ink-fg">
@@ -115,44 +157,18 @@ export default function MasterDashboardPage() {
     </div>
   );
 
-  const routeItems: TimelineItem[] =
-    requestState === 'accepted'
-      ? [
-          ...ROUTE_BASE,
-          {
-            id: 'current',
-            title: 'Kir yuvish mashinasini ulash — Chilonzor',
-            time: 'hozir',
-            meta: 'Bajarilmoqda · taxminiy to‘lov 140 000 so‘m',
-            status: 'active',
-            actions: currentJobActions,
-          },
-          {
-            id: 'next',
-            title: 'Quyilishni ta’mirlash — Yunusobod 4',
-            time: '14:00',
-            meta: 'Hozirgina qabul qilindi · to‘lov 165 000 so‘m',
-            status: 'upcoming',
-          },
-        ]
-      : [
-          ...ROUTE_BASE,
-          {
-            id: 'current',
-            title: 'Kir yuvish mashinasini ulash — Chilonzor',
-            time: 'hozir',
-            meta: 'Bajarilmoqda · taxminiy to‘lov 140 000 so‘m',
-            status: 'active',
-            actions: currentJobActions,
-          },
-          {
-            id: 'next',
-            title: 'Mikser almashtirish — Yakkasaroy',
-            time: '14:00',
-            meta: 'Tasdiqlangan · taxminiy to‘lov 130 000 so‘m',
-            status: 'upcoming',
-          },
-        ];
+  const routeItems: TimelineItem[] = currentJob
+    ? [
+        {
+          id: currentJob.id,
+          title: `${currentJob.categoryName ?? 'Buyurtma'} — ${currentJob.addressText ?? ''}`,
+          time: 'hozir',
+          meta: `Tayinlangan · taxminiy ${currentJob.priceMin != null && currentJob.priceMax != null ? `${formatSom(currentJob.priceMin)}–${formatSom(currentJob.priceMax)}` : "narx yo'q"}`,
+          status: 'active',
+          actions: currentJobActions,
+        },
+      ]
+    : [];
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col bg-background">
@@ -165,93 +181,78 @@ export default function MasterDashboardPage() {
         </div>
         <div className="flex items-center gap-3 px-5 pb-4 pt-2">
           <span className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-full bg-primary text-base font-bold text-white">
-            BT
+            {initialsOf(profile.fullName, user.phone)}
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-base font-bold">
-              Bekzod T.
-              <CheckIcon width={15} height={15} strokeWidth={2.6} className="text-primary" />
+              {profile.fullName ?? user.phone}
+              {profile.verificationStatus === 'VERIFIED' && (
+                <CheckIcon width={15} height={15} strokeWidth={2.6} className="text-primary" />
+              )}
             </div>
             <div className="flex items-center gap-1 text-xs opacity-70">
-              Santexnik · <Rating value="4.97" className="text-inherit" /> · 521 ish
+              {profile.skills[0]?.nameUz ?? 'Usta'} · <Rating value={profile.ratingAvg.toFixed(2)} className="text-inherit" /> · {profile.jobsDone} ish
             </div>
           </div>
-          <OnlineToggle online={online} onChange={setOnline} />
+          <OnlineToggle
+            online={profile.isOnline}
+            onChange={(next) => toggleAvailability.mutate(next)}
+          />
         </div>
 
-        <div className="grid grid-cols-3 gap-px border-t border-white/10 bg-white/10">
+        <div className="grid grid-cols-2 gap-px border-t border-white/10 bg-white/10">
           <div className="bg-ink px-3 py-3.5 text-center">
-            <div className="text-lg font-bold">340k</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Bugun, so&apos;m</div>
+            <div className="text-lg font-bold">{profile.jobsDone}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Bajarilgan ishlar</div>
           </div>
           <div className="bg-ink px-3 py-3.5 text-center">
-            <div className="text-lg font-bold">3 / 5</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Ishlar</div>
-          </div>
-          <div className="bg-ink px-3 py-3.5 text-center">
-            <div className="text-lg font-bold text-primary">98%</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Qabul qilish</div>
+            <div className="text-lg font-bold text-primary">{profile.ratingAvg.toFixed(2)}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Reyting</div>
           </div>
         </div>
       </div>
 
       {/* scroll area */}
       <div className="flex flex-1 flex-col gap-4 px-5 py-4">
-        {showRequest && (
+        {!profile.isOnline && (
+          <div className="rounded-lg border border-border-tertiary bg-background-secondary px-4 py-3.5 text-center text-sm text-content-secondary">
+            Yangi takliflarni ko&apos;rish uchun onlayn bo&apos;ling.
+          </div>
+        )}
+        {offer && countdown !== null && countdown > 0 && (
           <BookingRequestCard
             icon={<DropletIcon width={20} height={20} />}
-            title="Quyilishni ta'mirlash — oshxona jo'mragi"
-            meta="Yunusobod 4 · 1.4 km · Bugun 14:00–16:00"
-            payout="165 000"
+            title={`${offer.categoryName ?? 'Buyurtma'} — ${offer.description.slice(0, 60)}`}
+            meta={`${offer.addressText ?? ''} · ${(offer.distanceM / 1000).toFixed(1)} km`}
+            payout={offer.priceMin != null ? formatSom(offer.priceMin) : "narx yo'q"}
             countdown={countdown}
-            onAccept={() => setRequestState('accepted')}
-            onDecline={() => setRequestState('declined')}
+            onAccept={() => acceptOffer.mutate(offer.dispatchId)}
+            onDecline={() => declineOffer.mutate(offer.dispatchId)}
           />
-        )}
-        {requestState === 'accepted' && (
-          <div className="flex items-center gap-2.5 rounded-lg border border-success-fg bg-success-bg px-4 py-3.5">
-            <CheckIcon width={18} height={18} strokeWidth={2.4} className="flex-none text-success-fg" />
-            <span className="text-sm font-medium text-success-fg">
-              Buyurtma qabul qilindi — bugungi marshrutga #4 sifatida, soat 14:00 ga qo&apos;shildi.
-            </span>
-          </div>
         )}
 
         <div>
           <div className="mb-3 flex items-baseline justify-between">
-            <span className="text-lg font-bold tracking-tight">Bugungi marshrut</span>
+            <span className="text-lg font-bold tracking-tight">Joriy ish</span>
           </div>
-          <RouteTimeline items={routeItems} />
-        </div>
-
-        <div className="rounded-lg border border-border-tertiary bg-surface p-4 shadow-card">
-          <div className="mb-3.5 flex items-baseline justify-between">
-            <span className="text-sm font-semibold">Shu hafta</span>
-            <span className="text-base font-bold">1,86 mln so&apos;m</span>
-          </div>
-          <WeekEarningsChart />
-          <div className="mt-3.5 flex items-center gap-1.5 border-t border-border-tertiary pt-3 text-xs text-content-secondary">
-            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="var(--color-success-fg)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 17l6-6 4 4 8-8M15 7h6v6" />
-            </svg>
-            +18% o&apos;tgan haftaga nisbatan · to&apos;lov har dushanba
-          </div>
+          {routeItems.length > 0 ? (
+            <RouteTimeline items={routeItems} />
+          ) : (
+            <div className="rounded-lg border border-border-tertiary bg-surface px-4 py-6 text-center text-sm text-content-muted shadow-card">
+              Hozircha tayinlangan ish yo&apos;q.
+            </div>
+          )}
         </div>
       </div>
 
-      {/* master-specific bottom nav (presentational) */}
+      {/* master-specific bottom nav (Jadval/Suhbatlar/Daromad are placeholders — later milestones) */}
       <div className="grid grid-cols-4 border-t border-border-tertiary bg-surface px-2 pb-[22px] pt-2.5">
         {NAV_ITEMS.map((item) => (
           <span
             key={item.label}
-            className={`relative flex flex-col items-center gap-1 ${item.active ? 'text-primary' : 'text-content-muted'}`}
+            className={`flex flex-col items-center gap-1 ${item.active ? 'text-primary' : 'text-content-muted'}`}
           >
             {item.icon}
-            {item.badge && (
-              <span className="absolute right-[26%] top-[-3px] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white">
-                {item.badge}
-              </span>
-            )}
             <span className={`text-[10px] ${item.active ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
           </span>
         ))}

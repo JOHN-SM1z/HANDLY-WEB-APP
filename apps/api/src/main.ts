@@ -9,6 +9,7 @@ import { config as loadDotenv } from 'dotenv';
 import { AppModule } from './app.module';
 import { ProblemExceptionFilter } from './common/http/problem.filter';
 import { loadEnv } from './infra/config/env';
+import { SocketIoAdapter } from './modules/realtime/socket-io.adapter';
 
 async function bootstrap(): Promise<void> {
   // Load monorepo-root .env first, then a local .env if present.
@@ -32,6 +33,7 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new ProblemExceptionFilter());
   app.enableCors({ origin: env.WEB_ORIGIN, credentials: true });
+  app.useWebSocketAdapter(new SocketIoAdapter(app, env.WEB_ORIGIN));
   app.enableShutdownHooks();
 
   await app.listen(env.API_PORT, '0.0.0.0');

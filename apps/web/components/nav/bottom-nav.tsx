@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/cn';
+import { notificationsApi } from '@/lib/notifications';
+import { useSocketEvent } from '@/lib/socket';
 import { BellIcon, ClipboardListIcon, HomeIcon, PlusIcon, UserIcon } from '@/components/ui/icons';
 
 const items = [
@@ -15,6 +18,15 @@ const items = [
 /** Per docs/DESIGN_SYSTEM.md §5 — 5 slots, center = raised ink "+" (new order). */
 export function BottomNav() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: notificationsApi.unreadCount,
+  });
+  useSocketEvent('notification:new', () => {
+    void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+  });
 
   return (
     <nav
@@ -37,7 +49,12 @@ export function BottomNav() {
       </Link>
 
       {items.slice(2).map((item) => (
-        <NavItem key={item.href} {...item} active={pathname.startsWith(item.href)} />
+        <NavItem
+          key={item.href}
+          {...item}
+          active={pathname.startsWith(item.href)}
+          badge={item.href === '/notifications' ? data?.count : undefined}
+        />
       ))}
     </nav>
   );
@@ -48,22 +65,34 @@ function NavItem({
   label,
   icon: Icon,
   active,
+  badge,
 }: {
   href: string;
   label: string;
   icon: typeof HomeIcon;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
       href={href}
       className={cn(
-        'flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-content-secondary',
+        'relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-content-secondary',
         active && 'text-primary',
       )}
       aria-current={active ? 'page' : undefined}
     >
-      <Icon width={19} height={19} />
+      <span className="relative">
+        <Icon width={19} height={19} />
+        {Boolean(badge) && badge! > 0 && (
+          <span
+            className="absolute -right-1.5 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-white"
+            aria-label={`${badge} o'qilmagan bildirishnoma`}
+          >
+            {badge! > 9 ? '9+' : badge}
+          </span>
+        )}
+      </span>
       <span className="text-[10px] font-medium">{label}</span>
     </Link>
   );

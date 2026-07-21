@@ -106,6 +106,22 @@ enum OrderMediaKind {
   VIDEO
 }
 
+// ─────────────────────────── Dispatch (M3) ───────────────────────────
+enum DispatchStatus {
+  OFFERED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum NotificationType {
+  OFFER_RECEIVED
+  OFFER_EXPIRED
+  ORDER_ASSIGNED
+  ORDER_SEARCH_FAILED
+}
+
 // ─────────────────────────── Identity ───────────────────────────
 model User {
   id           String     @id @default(uuid()) @db.Uuid
@@ -124,6 +140,7 @@ model User {
   devices         Device[]
   addresses       Address[]
   orders          Order[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -152,6 +169,11 @@ model MasterProfile {
   // PINFL (JShShIR) stored as AES-256-GCM ciphertext, never plaintext.
   pinflEncrypted     String?
   isSelfEmployed     Boolean            @default(false)
+  // Real-time presence (M3) — the master's own "I'm working now" declaration;
+  // doubles as their working-hours signal (see AvailabilitySlot for day-level
+  // busy/booked blocking, which combines with this at dispatch-eligibility time).
+  isOnline           Boolean            @default(false)
+  onlineSince        DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -160,7 +182,10 @@ model MasterProfile {
   serviceAreas  ServiceArea[]
   availability  AvailabilitySlot[]
   verifications Verification[]
+  dispatches    OrderDispatch[]
+  assignedOrders Order[]
 
+  @@index([isOnline])
   @@map("master_profiles")
 }
 
@@ -219,6 +244,10 @@ model ServiceArea {
   centerLat Decimal       @db.Decimal(9, 6)
   centerLng Decimal       @db.Decimal(9, 6)
   radiusM   Int
+  // Generated column (Postgres GENERATED ALWAYS AS ... STORED, GIST-indexed) —
+  // kept in sync by Postgres itself from centerLat/centerLng. Prisma never
+  // writes it; only read via raw SQL in the dispatch eligibility query.
+  centerPoint Unsupported("geography(Point, 4326)")?
   createdAt DateTime      @default(now())
 
   @@index([masterId])
@@ -330,6 +359,13 @@ model Order {
   addressText String?
   latitude    Decimal?        @db.Decimal(9, 6)
   longitude   Decimal?        @db.Decimal(9, 6)
+  // Generated column mirroring latitude/longitude (see ServiceArea.centerPoint) —
+  // the actual PostGIS input for dispatch's distance/radius queries (M3).
+  location    Unsupported("geography(Point, 4326)")?
+  // Set once a dispatch offer is accepted (M3). Nullable — most of an order's
+  // life (DRAFT..SEARCHING) it has no master yet.
+  masterId    String?         @db.Uuid
+  master      MasterProfile?  @relation(fields: [masterId], references: [userId], onDelete: SetNull)
   // AI-assisted quote
   complexity  Complexity?
   aiDiagnosis Json?
@@ -345,9 +381,11 @@ model Order {
 
   media         OrderMedia[]
   statusHistory OrderStatusHistory[]
+  dispatches    OrderDispatch[]
 
   @@index([customerId, createdAt])
   @@index([status])
+  @@index([masterId])
   @@map("orders")
 }
 
@@ -377,4 +415,51 @@ model OrderStatusHistory {
 
   @@index([orderId, createdAt])
   @@map("order_status_history")
+}
+
+// ─────────────────────────── Dispatch (M3) ───────────────────────────
+// One row per master offered a given order, in cascade order. Sequential —
+// only one row is ever OFFERED at a time per order; ACCEPTED is terminal for
+// the order, the rest are WITHDRAWN. See apps/api/src/modules/dispatch.
+model OrderDispatch {
+  id            String         @id @default(uuid()) @db.Uuid
+  orderId       String         @db.Uuid
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  masterId      String         @db.Uuid
+  master        MasterProfile  @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  rankInCascade Int
+  distanceM     Int
+  score         Decimal        @db.Decimal(6, 2)
+  status        DispatchStatus @default(OFFERED)
+  // Default rule (ARCHITECTURE §9.2.6): counted on ACCEPTED, not on offer —
+  // Free masters aren't punished for declining. Unread until M5's lead-quota
+  // system exists; correctly computed now so that system needs no backfill.
+  countedAsLead Boolean        @default(false)
+  offeredAt     DateTime       @default(now())
+  expiresAt     DateTime
+  respondedAt   DateTime?
+  createdAt     DateTime       @default(now())
+
+  @@unique([orderId, masterId])
+  @@index([orderId])
+  @@index([masterId, status])
+  @@map("order_dispatches")
+}
+
+// ─────────────────────────── Notifications (M3) ───────────────────────────
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  // Free-form payload (e.g. {orderId}) — kept generic rather than a hard FK
+  // since notification kinds will grow across future milestones.
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

@@ -1,8 +1,8 @@
 import { OrderStatus } from '@handly/contracts';
 
 /**
- * M2 transition table (customer flow). Later milestones extend targets
- * (SEARCHING→ASSIGNED etc.) — the guard stays the single authority.
+ * M2+M3 transition table (customer + dispatch flow). Later milestones extend
+ * targets further (ASSIGNED→EN_ROUTE etc.) — the guard stays the single authority.
  */
 const TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   [OrderStatus.DRAFT]: [OrderStatus.PRICED, OrderStatus.CANCELLED_BY_CUSTOMER],
@@ -12,7 +12,14 @@ const TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
     OrderStatus.SEARCHING,
     OrderStatus.CANCELLED_BY_CUSTOMER,
   ],
-  [OrderStatus.SEARCHING]: [OrderStatus.CANCELLED_BY_CUSTOMER],
+  // ASSIGNED = a dispatch offer was accepted; EXPIRED = the candidate pool
+  // was exhausted (incl. one radius expansion) with no acceptance (M3).
+  [OrderStatus.SEARCHING]: [
+    OrderStatus.ASSIGNED,
+    OrderStatus.EXPIRED,
+    OrderStatus.CANCELLED_BY_CUSTOMER,
+  ],
+  [OrderStatus.ASSIGNED]: [OrderStatus.CANCELLED_BY_CUSTOMER],
 };
 
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {

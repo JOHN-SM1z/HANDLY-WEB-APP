@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
@@ -25,6 +26,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { STORAGE_PROVIDER, type StorageProvider } from '../../infra/storage/storage-provider';
 import { AiService } from '../ai/ai.service';
 import type { DiagnoseImage } from '../ai/ai-provider';
+import { DispatchService } from '../dispatch/dispatch.service';
 import { canTransition, EDITABLE_STATUSES } from './order-state';
 import { computeQuote } from './pricing';
 
@@ -49,20 +51,25 @@ type OrderWithRelations = OrderRow & {
   category: ServiceCategory | null;
   media: OrderMedia[];
   statusHistory: OrderStatusHistory[];
+  master: { userId: string; fullName: string | null; ratingAvg: Prisma.Decimal; jobsDone: number } | null;
 };
 
 const FULL_INCLUDE = {
   category: true,
   media: { orderBy: { createdAt: 'asc' as const } },
   statusHistory: { orderBy: { createdAt: 'asc' as const } },
+  master: { select: { userId: true, fullName: true, ratingAvg: true, jobsDone: true } },
 };
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
     private readonly ai: AiService,
+    private readonly dispatch: DispatchService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
@@ -286,7 +293,13 @@ export class OrdersService {
       },
       include: FULL_INCLUDE,
     });
-    // Dispatch (matching, offers) begins in Milestone 3 — SEARCHING is terminal for M2.
+    // Fire-and-forget from the caller's perspective — dispatch runs its own
+    // cascade/notifications independently; a slow/failed first cascade step
+    // must not fail the customer's submit request. Errors are logged inside
+    // DispatchService itself (cascadeNext no-ops safely on any bad state).
+    void this.dispatch.startDispatch(order.id).catch((err: unknown) => {
+      this.logger.error(`startDispatch failed for order ${order.id}: ${String(err)}`);
+    });
     return this.toDto(updated);
   }
 
@@ -330,6 +343,15 @@ export class OrdersService {
 
   async getOne(customerId: string, orderId: string): Promise<OrderDto> {
     return this.toDto(await this.getOwned(customerId, orderId));
+  }
+
+  /** The one order currently assigned to this master, if any (M3). */
+  async getCurrentJob(masterId: string): Promise<OrderDto | null> {
+    const order = await this.prisma.order.findFirst({
+      where: { masterId, status: OrderStatus.ASSIGNED },
+      include: FULL_INCLUDE,
+    });
+    return order ? this.toDto(order) : null;
   }
 
   // ─────────────── helpers ───────────────
@@ -412,6 +434,14 @@ export class OrdersService {
         toStatus: h.toStatus as OrderDto['status'],
         createdAt: h.createdAt.toISOString(),
       })),
+      master: order.master
+        ? {
+            id: order.master.userId,
+            fullName: order.master.fullName,
+            ratingAvg: Number(order.master.ratingAvg),
+            jobsDone: order.master.jobsDone,
+          }
+        : null,
       createdAt: order.createdAt.toISOString(),
       submittedAt: order.submittedAt?.toISOString() ?? null,
     };

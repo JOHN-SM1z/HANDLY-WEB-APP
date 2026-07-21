@@ -36,3 +36,32 @@ test('DRAFT and PRICED are editable; SEARCHING is not', () => {
   assert.ok(EDITABLE_STATUSES.includes(OrderStatus.PRICED));
   assert.ok(!EDITABLE_STATUSES.includes(OrderStatus.SEARCHING));
 });
+
+// ─────────────── M3: dispatch/matching extensions ───────────────
+
+test('SEARCHING -> ASSIGNED on a successful dispatch accept', () => {
+  assert.equal(canTransition(OrderStatus.SEARCHING, OrderStatus.ASSIGNED), true);
+});
+
+test('SEARCHING -> EXPIRED when the candidate pool is exhausted', () => {
+  assert.equal(canTransition(OrderStatus.SEARCHING, OrderStatus.EXPIRED), true);
+});
+
+test('cancellation allowed from ASSIGNED too (customer changes their mind post-match)', () => {
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.CANCELLED_BY_CUSTOMER), true);
+});
+
+test('ASSIGNED cannot be re-assigned, re-searched, or re-priced', () => {
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.ASSIGNED), false);
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.SEARCHING), false);
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.PRICED), false);
+});
+
+test('EXPIRED is terminal via this table (no further transitions modeled yet)', () => {
+  assert.equal(canTransition(OrderStatus.EXPIRED, OrderStatus.SEARCHING), false);
+  assert.equal(canTransition(OrderStatus.EXPIRED, OrderStatus.CANCELLED_BY_CUSTOMER), false);
+});
+
+test('ASSIGNED is not editable (only DRAFT/PRICED are)', () => {
+  assert.ok(!EDITABLE_STATUSES.includes(OrderStatus.ASSIGNED));
+});

@@ -38,6 +38,25 @@ export const envSchema = z.object({
   UPLOAD_MAX_PHOTO_MB: z.coerce.number().positive().default(10),
   UPLOAD_MAX_VIDEO_MB: z.coerce.number().positive().default(50),
   ORDER_MAX_MEDIA: z.coerce.number().int().positive().default(5),
+
+  // Push notifications (M3). "mock" logs to console, needs no creds; "fcm"
+  // requires the service-account vars below (falls back to mock if unset).
+  PUSH_PROVIDER: z.enum(['mock', 'fcm']).default('mock'),
+  FCM_PROJECT_ID: z.string().default(''),
+  FCM_CLIENT_EMAIL: z.string().default(''),
+  FCM_PRIVATE_KEY: z.string().default(''),
+
+  // Dispatch / matching (M3) — plain typed config for now; the clean swap-in
+  // point for a future hot-reloadable rules engine (§9.5) is this one object.
+  // Eligibility radius is each master's own ServiceArea.radiusM (how far they
+  // said they'd travel) — DISPATCH_RADIUS_EXPANSION_FACTOR widens that
+  // per-master radius for the one retry when the pool comes back empty
+  // (§9.2.5 "radius expands stepwise"), it isn't an absolute distance itself.
+  DISPATCH_TOP_N: z.coerce.number().int().positive().default(5),
+  DISPATCH_RADIUS_EXPANSION_FACTOR: z.coerce.number().positive().default(2),
+  DISPATCH_OFFER_TTL_SCHEDULED_SECONDS: z.coerce.number().int().positive().default(600),
+  DISPATCH_OFFER_TTL_PRIORITY_SECONDS: z.coerce.number().int().positive().default(120),
+  DISPATCH_OFFER_TTL_EMERGENCY_SECONDS: z.coerce.number().int().positive().default(60),
 });
 
 export type Env = z.infer<typeof envSchema>;

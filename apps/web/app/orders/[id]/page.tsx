@@ -7,16 +7,17 @@ import { COMPLEXITY_INFO, type OrderStatus, SERVICE_TIER_INFO } from '@handly/co
 import { AppHeader } from '@/components/app-header';
 import { OrderStatusBadge } from '@/components/order/order-status-badge';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { Badge, Rating } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, MapPinIcon, SparkleIcon, VideoIcon } from '@/components/ui/icons';
+import { CalendarIcon, CheckIcon, MapPinIcon, SparkleIcon, VideoIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { ApiError } from '@/lib/api';
 import { formatSom, formatSomRange } from '@/lib/format';
 import { ordersApi } from '@/lib/orders';
+import { useSocketEvent } from '@/lib/socket';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
-const CANCELABLE: OrderStatus[] = ['DRAFT', 'PRICED', 'SEARCHING'];
+const CANCELABLE: OrderStatus[] = ['DRAFT', 'PRICED', 'SEARCHING', 'ASSIGNED'];
 
 export default function OrderDetailPage() {
   const { ready, user } = useRequireAuth();
@@ -32,6 +33,14 @@ export default function OrderDetailPage() {
     queryKey: ['order', params.id],
     queryFn: () => ordersApi.get(params.id),
     enabled: Boolean(user) && Boolean(params.id),
+  });
+
+  // Live push while dispatch is running (M3) — a master accepting/the pool
+  // exhausting flips status server-side; refetch this order when it does.
+  useSocketEvent<{ orderId: string }>('order:updated', (payload) => {
+    if (payload.orderId === params.id) {
+      void queryClient.invalidateQueries({ queryKey: ['order', params.id] });
+    }
   });
 
   if (!ready || !user) {
@@ -170,6 +179,30 @@ export default function OrderDetailPage() {
           {order.status === 'SEARCHING' && (
             <div className="rounded-xl border border-info-bg bg-info-bg p-4 text-center">
               <p className="text-sm font-medium text-info-fg">Sizga mos usta izlanmoqda…</p>
+            </div>
+          )}
+
+          {order.status === 'EXPIRED' && (
+            <div className="rounded-xl border border-border-tertiary bg-background-secondary p-4 text-center">
+              <p className="text-sm font-medium text-content-primary">Hozircha mos usta topilmadi</p>
+              <p className="mt-1 text-xs text-content-secondary">
+                Qo&apos;llab-quvvatlash xizmatiga murojaat qiling yoki qayta urinib ko&apos;ring.
+              </p>
+            </div>
+          )}
+
+          {order.status === 'ASSIGNED' && order.master && (
+            <div className="flex items-center gap-3 rounded-xl border border-primary bg-surface p-4 shadow-card">
+              <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary-soft-fg">
+                {(order.master.fullName ?? 'US').slice(0, 2).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-content-primary">
+                  {order.master.fullName ?? 'Usta'}
+                  <CheckIcon width={13} height={13} strokeWidth={2.6} className="text-primary" />
+                </div>
+                <Rating value={order.master.ratingAvg.toFixed(2)} className="mt-0.5 text-xs" />
+              </div>
             </div>
           )}
 
