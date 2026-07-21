@@ -18,6 +18,10 @@ export const envSchema = z.object({
   OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   OTP_DAILY_CAP_PER_PHONE: z.coerce.number().int().positive().default(10),
 
+  // Login brute-force protection — same Redis counter pattern as OTP above.
+  LOGIN_MAX_ATTEMPTS: z.coerce.number().int().positive().default(10),
+  LOGIN_LOCKOUT_SECONDS: z.coerce.number().int().positive().default(900),
+
   SMS_PROVIDER: z.enum(['mock', 'eskiz']).default('mock'),
   ESKIZ_EMAIL: z.string().default(''),
   ESKIZ_PASSWORD: z.string().default(''),
@@ -61,6 +65,14 @@ export const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+// The exact placeholder values shipped in .env.example — safe for local dev,
+// never safe in production. Anyone who forgets to change them ships a
+// forgeable JWT secret / a guessable field-encryption key.
+const KNOWN_DEV_PLACEHOLDERS = new Set([
+  'dev-access-secret-change-me',
+  'dev-32-byte-key-change-me-please!',
+]);
+
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const parsed = envSchema.safeParse(source);
   if (!parsed.success) {
@@ -69,5 +81,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .join('\n');
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
-  return parsed.data;
+  const env = parsed.data;
+  if (env.NODE_ENV === 'production') {
+    const problems: string[] = [];
+    if (KNOWN_DEV_PLACEHOLDERS.has(env.JWT_ACCESS_SECRET) || env.JWT_ACCESS_SECRET.length < 32) {
+      problems.push('JWT_ACCESS_SECRET must be a real, unique secret of at least 32 characters in production');
+    }
+    if (KNOWN_DEV_PLACEHOLDERS.has(env.FIELD_ENCRYPTION_KEY) || env.FIELD_ENCRYPTION_KEY.length < 32) {
+      problems.push('FIELD_ENCRYPTION_KEY must be a real, unique key of at least 32 characters in production');
+    }
+    if (problems.length > 0) {
+      throw new Error(`Refusing to start in production with unsafe secrets:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
+    }
+  }
+  return env;
 }

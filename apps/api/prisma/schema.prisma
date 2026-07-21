@@ -314,6 +314,7 @@ model Session {
   createdAt        DateTime  @default(now())
 
   @@index([userId])
+  @@index([refreshTokenHash])
   @@map("sessions")
 }
 
@@ -385,7 +386,10 @@ model Order {
 
   @@index([customerId, createdAt])
   @@index([status])
-  @@index([masterId])
+  // Every masterId lookup (getCurrentJob, dispatch's "already has an active
+  // job" check) also filters status='ASSIGNED' — composite replaces the old
+  // masterId-only index since it covers both shapes (leftmost-prefix).
+  @@index([masterId, status])
   @@map("orders")
 }
 

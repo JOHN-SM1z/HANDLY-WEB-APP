@@ -128,6 +128,7 @@ export function StepSchedule({
           </p>
           <input
             type="date"
+            aria-label="Sana"
             value={date}
             min={today}
             max={maxDate}

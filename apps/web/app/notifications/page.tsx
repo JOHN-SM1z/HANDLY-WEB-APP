@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { NotificationDto } from '@handly/contracts';
 import { AppHeader } from '@/components/app-header';
 import { BottomNav } from '@/components/nav/bottom-nav';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { BellIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { notificationsApi } from '@/lib/notifications';
@@ -16,7 +18,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => notificationsApi.list(),
     enabled: Boolean(user),
@@ -59,6 +61,13 @@ export default function NotificationsPage() {
             // eslint-disable-next-line react/no-array-index-key
             <div key={i} className="h-16 animate-pulse rounded-xl bg-background-secondary" />
           ))
+        ) : isError ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+            <Alert>Bildirishnomalarni yuklab bo&apos;lmadi</Alert>
+            <Button variant="outline" onClick={() => void refetch()}>
+              Qayta urinish
+            </Button>
+          </div>
         ) : items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-background-secondary text-content-muted">

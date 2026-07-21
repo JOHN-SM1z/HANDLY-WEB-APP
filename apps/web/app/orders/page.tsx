@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/app-header';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { OrderStatusBadge } from '@/components/order/order-status-badge';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ClipboardListIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
@@ -15,7 +16,7 @@ import { useRequireAuth } from '@/lib/use-require-auth';
 export default function OrdersPage() {
   const { ready, user } = useRequireAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['orders'],
     queryFn: () => ordersApi.list(),
     enabled: Boolean(user),
@@ -43,6 +44,13 @@ export default function OrdersPage() {
             // eslint-disable-next-line react/no-array-index-key
             <div key={i} className="h-20 animate-pulse rounded-xl bg-background-secondary" />
           ))
+        ) : isError ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+            <Alert>Buyurtmalarni yuklab bo&apos;lmadi</Alert>
+            <Button variant="outline" onClick={() => void refetch()}>
+              Qayta urinish
+            </Button>
+          </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-background-secondary text-content-muted">

@@ -33,6 +33,17 @@ async function bootstrap(): Promise<void> {
   app.setGlobalPrefix('api/v1');
   app.useGlobalFilters(new ProblemExceptionFilter());
   app.enableCors({ origin: env.WEB_ORIGIN, credentials: true });
+  // Baseline security headers (no new dependency — a handful of static
+  // response headers doesn't warrant pulling in @fastify/helmet). CSP/HSTS
+  // deliberately left out: CSP needs real tuning against every asset source
+  // this app actually uses before it's safe to enable, and HSTS is normally
+  // the reverse proxy/CDN's job once TLS terminates there, not the app's.
+  app.getHttpAdapter().getInstance().addHook('onSend', (_req, reply, payload, done) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    done(null, payload);
+  });
   app.useWebSocketAdapter(new SocketIoAdapter(app, env.WEB_ORIGIN));
   app.enableShutdownHooks();
 

@@ -345,6 +345,7 @@ export function StepDescription({
               : 'GPS orqali joylashuvni aniqlash'}
         </button>
         <TextField
+          label="Manzil"
           placeholder="Manzilni kiriting (masalan: Toshkent, Chilonzor 14-kvartal)"
           value={addressText}
           onChange={(e) => setAddressText(e.target.value)}

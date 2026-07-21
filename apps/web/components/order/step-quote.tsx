@@ -99,6 +99,7 @@ export function StepQuote({
 
       <button
         type="button"
+        aria-pressed={consent}
         onClick={() => setConsent((c) => !c)}
         className="flex items-start gap-2.5 rounded-md border border-border-secondary p-3 text-left"
       >

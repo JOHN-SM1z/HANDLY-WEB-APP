@@ -7,6 +7,8 @@ import type { OfferDto } from '@handly/contracts';
 import { BookingRequestCard } from '@/components/master/booking-request-card';
 import { OnlineToggle } from '@/components/master/online-toggle';
 import { RouteTimeline, type TimelineItem } from '@/components/master/route-timeline';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { CheckIcon, DropletIcon, PhoneIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { Rating } from '@/components/ui/badge';
@@ -79,7 +81,11 @@ export default function MasterDashboardPage() {
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState<number | null>(null);
 
-  const { data: profile } = useQuery({
+  const {
+    data: profile,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useQuery({
     queryKey: ['master', 'profile'],
     queryFn: masterApi.getProfile,
     enabled: Boolean(user),
@@ -135,6 +141,17 @@ export default function MasterDashboardPage() {
     return () => clearInterval(interval);
   }, [offer]);
 
+  if (ready && user && profileError) {
+    return (
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-6 text-center">
+        <Alert>Profilni yuklab bo&apos;lmadi</Alert>
+        <Button variant="outline" onClick={() => void refetchProfile()}>
+          Qayta urinish
+        </Button>
+      </main>
+    );
+  }
+
   if (!ready || !user || !profile) {
     return (
       <main className="flex min-h-[100dvh] items-center justify-center">
@@ -147,13 +164,26 @@ export default function MasterDashboardPage() {
 
   const currentJobActions = (
     <div className="mt-2.5 flex gap-2">
-      <span className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm bg-ink text-xs font-semibold text-ink-fg">
+      {/* Presentational placeholder — job execution/completion is M4 (see CLAUDE.md). Real
+          <button disabled> so it's honestly non-interactive to keyboard/screen readers too,
+          not just visually — a styled span that looks clickable but does nothing is worse. */}
+      <button
+        type="button"
+        disabled
+        aria-label="Bajarildi deb belgilash (hali mavjud emas)"
+        className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm bg-ink text-xs font-semibold text-ink-fg disabled:opacity-100"
+      >
         <CheckIcon width={13} height={13} strokeWidth={2.4} />
         Bajarildi deb belgilash
-      </span>
-      <span className="flex h-9 w-9 items-center justify-center rounded-sm border border-border-primary text-content-secondary">
+      </button>
+      <button
+        type="button"
+        disabled
+        aria-label="Ustaga qo'ng'iroq qilish (hali mavjud emas)"
+        className="flex h-9 w-9 items-center justify-center rounded-sm border border-border-primary text-content-secondary disabled:opacity-100"
+      >
         <PhoneIcon width={15} height={15} />
-      </span>
+      </button>
     </div>
   );
 

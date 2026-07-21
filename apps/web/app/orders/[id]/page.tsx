@@ -29,7 +29,7 @@ export default function OrderDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: order, isLoading } = useQuery({
+  const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ['order', params.id],
     queryFn: () => ordersApi.get(params.id),
     enabled: Boolean(user) && Boolean(params.id),
@@ -73,7 +73,14 @@ export default function OrderDetailPage() {
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col">
       <AppHeader backHref="/orders" title={order ? `#${order.orderNo}` : 'Buyurtma'} />
 
-      {isLoading || !order ? (
+      {isError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5 py-16 text-center">
+          <Alert>Buyurtmani yuklab bo&apos;lmadi</Alert>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Qayta urinish
+          </Button>
+        </div>
+      ) : isLoading || !order ? (
         <div className="flex flex-1 flex-col gap-3 px-5 py-5">
           {Array.from({ length: 3 }).map((_, i) => (
             // eslint-disable-next-line react/no-array-index-key

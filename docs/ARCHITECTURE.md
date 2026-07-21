@@ -2,8 +2,8 @@
 
 # Handly — Technical Architecture Document (MVP v3)
 
-**Status:** Accepted — Milestone 1 (Foundations + Auth & Profiles) implemented & verified 2026-07-19; Milestone 2 (Requests, AI diagnosis, pricing) implemented & verified 2026-07-20
-**Date:** 2026-07-18 (v3.2 — Milestone 2 completion folded in 2026-07-20)
+**Status:** Accepted — Milestone 1 (Foundations + Auth & Profiles) implemented & verified 2026-07-19; Milestone 2 (Requests, AI diagnosis, pricing) implemented & verified 2026-07-20; Milestone 3 (Matching & dispatch, PostGIS, real-time offers) implemented & verified 2026-07-21
+**Date:** 2026-07-18 (v3.3 — Milestone 3 completion folded in 2026-07-21)
 **Sources:** `handly_mvp_v2_full_wireframe.html` (screens A–E) + founder spec additions (subscriptions, Complexity Escalation Layer, Handly Guarantee, penalties, cashback/loyalty/referrals, service tiers, admin dashboard)
 
 > See §0.1 for the approved MVP simplifications and the tax-withholding design that this document is now the source of truth for.
@@ -95,7 +95,7 @@ TaxProvider (interface)
 | Maps/geo | **Yandex Maps JS + Geocoder**; navigation deep-links to Yandex/Google apps | Best UZ coverage; no routing to build. |
 | Identity | **MyID placeholder** behind `VerificationProvider` + manual admin review fallback; Didox later | B2B contract timelines must never block launch. |
 | Payments | **Payme / Click / Uzum** behind one abstraction (§10) | As specified. |
-| AI | **Claude API (`claude-sonnet-5`)** — vision + structured outputs (§8) | Photo/video diagnosis, complexity classification, moderation; no ML team required. |
+| AI | **Claude API (model configurable via `AI_MODEL`, default `claude-opus-4-8`)** — vision + structured outputs (§8) | Photo/video diagnosis, complexity classification, moderation; no ML team required. |
 | Infra | **Docker Compose on Tashkent-region VPS**, Caddy, GitHub Actions | UZ data-residency law requires in-country storage of citizens' personal data (§12.1); Compose is sufficient far past MVP. |
 | Observability | Sentry + Grafana/Loki/Prometheus | Cheap, self-hostable. |
 
@@ -628,7 +628,7 @@ Stance unchanged: **AI assists, never gates.** Every feature has a deterministic
 
 ```
 modules/ai/
-├── ai.service.ts        # Claude client (claude-sonnet-5), retries, timeouts, cost caps
+├── ai.service.ts        # Claude client (model via AI_MODEL env, default claude-opus-4-8), retries, timeouts, cost caps
 ├── diagnosis.ts         # media + text → issue, category, complexity, confidence
 ├── moderation.ts        # photos, reviews, portfolios → allow | flag_for_admin
 └── prompts/             # versioned templates (uz/ru)
@@ -688,7 +688,7 @@ Customers never see a list of professionals. On `submit`:
 4. **Sequential offers, one master at a time** (no bidding): acceptance windows — Emergency 60 s, Priority 120 s, Scheduled 10 min. Decline/timeout → cascade to next candidate (W1). **Premium head start:** first cascade round draws from Premium masters only ("faster job assignment"); Free masters enter from round two.
 5. Pool exhausted → radius expands stepwise → still empty → customer notified with option to convert tier/reschedule; admin alerted. ETA targets (10–15 / 15–30 / 30–60 min) are monitored as SLOs per tier (§ analytics).
 6. **Leads:** a dispatch marks `counted_as_lead = true` per rule-config — **default: counted on `ACCEPTED`** (Free masters aren't punished for declining; quota = jobs taken/month, default 10). Alternative (count on offer) is a config flip. Premium/trial: unlimited.
-7. Race safety: accept runs `SELECT … FOR UPDATE SKIP LOCKED` on the order row; only one `ACCEPTED` dispatch can exist.
+7. Race safety: accept runs a blocking `SELECT … FOR UPDATE` (not `SKIP LOCKED` — a concurrent accept on the *same* order must wait and then see the final state, not skip to a different row) on the order row inside a transaction; only one `ACCEPTED` dispatch can exist. Verified under real concurrent load (M3): exactly one of two simultaneous accept requests succeeds, the other gets a clean conflict response.
 
 ### 9.3 Penalty engine (automated quality control)
 
@@ -780,7 +780,7 @@ Deliberately not Kubernetes: two VMs carry this well past MVP; the stateless tie
 
 ## 13. Scalability considerations
 
-- **Hot path = dispatch:** one indexed PostGIS `ST_DWithin` + filters; cascade runs in workers so order spikes queue instead of collapsing the API; `SKIP LOCKED` prevents thundering-herd accepts; offer timers on Redis. Tier/penalty recomputation is event-driven + nightly batch — never inline in requests.
+- **Hot path = dispatch:** GIST-indexed PostGIS `ST_DWithin` (a constant-radius pre-filter alongside the exact per-master-radius check — PostGIS can only drive the index off a constant, not a per-row value) + filters; cascade runs in workers so order spikes queue instead of collapsing the API; a blocking `SELECT ... FOR UPDATE` (not `SKIP LOCKED` — the goal is to serialize competing accepts on the *same* order, not skip-and-grab-another) prevents double-accepts; offer timers on Redis. Tier/penalty recomputation is event-driven + nightly batch — never inline in requests.
 - **Stateless horizontal tier** (api/web/workers) behind Caddy; Socket.IO Redis adapter already multi-replica.
 - **Growth levers in order:** (1) read replicas + Redis caching for catalog/browse and rule configs; (2) monthly partitioning of `orders`, `notifications`, `wallet_entries`, `penalty_events`; (3) extract `dispatch` + `notifications` into services along existing module seams (Redis streams → NATS if event volume demands); (4) multi-city is data not code (dispatch is geo-scoped; region column enables later sharding).
 - **Analytics:** admin metrics read from materialized views refreshed on schedule — dashboards never scan hot tables.
@@ -795,7 +795,7 @@ Deliberately not Kubernetes: two VMs carry this well past MVP; the stateless tie
 | **M0 — Foundations** ✅ | 1 wk | Monorepo (pnpm+Turborepo), Prisma baseline, design tokens, Docker Compose, env validation. *(CI/CD + rules-engine skeleton deferred to later milestones.)* | **Done 2026-07-19** |
 | **M1 — Auth & profiles** ✅ | 2 wk | Phone+password+OTP (Eskiz/mock), rotating refresh sessions, RBAC + capability guards, customer profile/addresses, master registration + profile (skills, experience, certifications/portfolio metadata, service areas), catalog, `TaxProvider` interface + `MockTaxProvider`, PINFL encryption. Verified end-to-end (curl + browser). | **Done 2026-07-19** |
 | **M2 — Requests, AI, pricing** ✅ | 2 wk | Categories, request wizard (media, GPS, service tiers, slots), **AI diagnosis (free, Claude + deterministic fallback)**, pricing engine v1 (bands, complexity, tier fees), quote confirmation + consent, order lifecycle `DRAFT→PRICED→SEARCHING`. Verified end-to-end (curl + browser). | **Done 2026-07-20** |
-| **M3 — Dispatch & lifecycle** | 2–3 wk | Manual admin verification queue (MyID behind interface), availability calendar, PostGIS matching + sequential cascade + Premium head start, socket/push offers, live tracking, completion confirmation, reviews, masked contact | Full customer↔master lifecycle on staging within ETA windows |
+| **M3 — Dispatch & lifecycle** ✅ | 2–3 wk | Auto-dispatch engine (eligibility filter, distance/rating/jobs scoring, weighted top-N pick, sequential offers with timeout + cascade + one radius expansion), PostGIS matching (generated `geography` columns + GIST indexes), master online/offline availability, Socket.IO real-time offers (`offer:received`/`order:updated`), FCM-ready push abstraction, notifications module, order lifecycle `SEARCHING→ASSIGNED/EXPIRED`. **Deferred to a later milestone** (not in this pass's approved scope): manual admin verification queue, Premium-first cascade (no subscriptions exist yet), live GPS en-route tracking, job completion confirmation, reviews, masked contact. | **Done 2026-07-21** |
 | **M4 — Money** | 2–3 wk | Payment abstraction (**Click first**, then Payme, Uzum), order payments + 1% tax ledger, platform fees, subscriptions (Free quota + Premium + 14-day trial + renewal), earnings wallet, payouts (admin-manual first), reconciliation | Real webhook activates Premium; paid order settles ledger correctly |
 | **M5 — Trust & incentives** | 2 wk | Trust tiers + gates, penalty engine + sanctions, **Handly Guarantee** (claims + rework/refund flows), cashback/credits wallet, referrals, loyalty rates, digital-payment discounts | Economy loops run end-to-end from rule-configs |
 | **M6 — Admin dashboard** | 1–2 wk (part-parallel with M4–5) | Verification, users, orders, categories, plans, warranties, penalties, refunds, support notes, rule editor, analytics (fill rate, time-to-assign, ETA SLOs, GMV, digital-payment share, Premium conversion/churn, warranty rate) | Admin can operate the marketplace without DB access |

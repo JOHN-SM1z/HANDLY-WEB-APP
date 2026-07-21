@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
@@ -19,7 +20,9 @@ import type {
   SessionUser,
 } from '@handly/contracts';
 import type { AuthUser } from '../../common/auth/auth-user';
+import { AppConfig } from '../../infra/config/app-config';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { RedisService } from '../../infra/redis/redis.service';
 import { OtpService } from './otp.service';
 import { type SessionMeta, TokenService } from './token.service';
 
@@ -30,10 +33,14 @@ export type LoginOutcome = AuthResult | (OtpChallenge & { needsVerification: tru
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly otp: OtpService,
     private readonly token: TokenService,
+    private readonly redis: RedisService,
+    private readonly config: AppConfig,
   ) {}
 
   async register(dto: RegisterInput): Promise<OtpChallenge> {
@@ -95,14 +102,18 @@ export class AuthService {
   }
 
   async login(dto: LoginInput, meta: SessionMeta): Promise<LoginOutcome> {
+    await this.enforceLoginRateLimit(dto.phone);
+
     const user = await this.prisma.user.findUnique({
       where: { phone: dto.phone },
       include: { masterProfile: true },
     });
     // Generic message either way — no account enumeration.
     if (!user || !(await argon2.verify(user.passwordHash, dto.password))) {
+      await this.registerFailedLogin(dto.phone);
       throw new UnauthorizedException("Telefon raqami yoki parol noto'g'ri");
     }
+    await this.clearFailedLogins(dto.phone);
 
     this.assertNotBlocked(user.status);
 
@@ -129,8 +140,7 @@ export class AuthService {
   }
 
   async refresh(rawRefresh: string, meta: SessionMeta): Promise<AuthResult> {
-    const session = await this.token.findValidSession(rawRefresh);
-    await this.token.revokeById(session.id); // single-use rotation
+    const session = await this.token.consumeSession(rawRefresh); // atomic single-use rotation
 
     const user = await this.prisma.user.findUnique({
       where: { id: session.userId },
@@ -163,6 +173,45 @@ export class AuthService {
   }
 
   // ── helpers ──
+
+  /**
+   * Brute-force guard for /auth/login — same Redis counter shape as OTP's
+   * rate limiting (fail open if Redis is down, so dev/an outage never hard-
+   * blocks login). Checked before touching argon2 so a locked-out phone
+   * doesn't pay the hashing cost either.
+   */
+  private async enforceLoginRateLimit(phone: string): Promise<void> {
+    try {
+      const key = `login:fail:${phone}`;
+      const count = Number((await this.redis.client.get(key)) ?? 0);
+      if (count >= this.config.env.LOGIN_MAX_ATTEMPTS) {
+        const remaining = await this.redis.ttl(key);
+        throw new UnauthorizedException(
+          `Juda ko'p urinish. ${remaining > 0 ? Math.ceil(remaining / 60) : Math.ceil(this.config.env.LOGIN_LOCKOUT_SECONDS / 60)} daqiqadan so'ng qayta urinib ko'ring`,
+        );
+      }
+    } catch (err) {
+      if (err instanceof UnauthorizedException) throw err;
+      this.logger.warn(`Login rate-limit check skipped (Redis): ${(err as Error).message}`);
+    }
+  }
+
+  private async registerFailedLogin(phone: string): Promise<void> {
+    try {
+      await this.redis.incrWithTtl(`login:fail:${phone}`, this.config.env.LOGIN_LOCKOUT_SECONDS);
+    } catch (err) {
+      this.logger.warn(`Failed-login counter skipped (Redis): ${(err as Error).message}`);
+    }
+  }
+
+  private async clearFailedLogins(phone: string): Promise<void> {
+    try {
+      await this.redis.del(`login:fail:${phone}`);
+    } catch {
+      // Non-fatal — the counter will simply expire on its own TTL.
+    }
+  }
+
   private assertNotBlocked(status: string): void {
     if (status === 'BANNED' || status === 'SUSPENDED') {
       throw new ForbiddenException('Hisob bloklangan');

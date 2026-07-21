@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/app-header';
 import { CategoryIcon } from '@/components/category-icon';
 import { BottomNav } from '@/components/nav/bottom-nav';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { BellIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
@@ -25,7 +26,12 @@ export default function HomePage() {
     queryFn: () => api.get<MeResponse>('/me'),
     enabled: Boolean(user),
   });
-  const { data: categories, isLoading: categoriesLoading } = useQuery({
+  const {
+    data: categories,
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery({
     queryKey: ['categories'],
     queryFn: categoriesApi.list,
     enabled: Boolean(user),
@@ -80,6 +86,13 @@ export default function HomePage() {
                 // eslint-disable-next-line react/no-array-index-key
                 <div key={i} className="h-20 animate-pulse rounded-xl bg-background-secondary" />
               ))}
+            </div>
+          ) : categoriesError ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <Alert>Xizmatlar ro&apos;yxatini yuklab bo&apos;lmadi</Alert>
+              <Button variant="outline" size="sm" onClick={() => void refetchCategories()}>
+                Qayta urinish
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">
