@@ -23,6 +23,7 @@ import type { AuthUser } from '../../common/auth/auth-user';
 import { AppConfig } from '../../infra/config/app-config';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { RedisService } from '../../infra/redis/redis.service';
+import { ReferralsService } from '../referrals/referrals.service';
 import { OtpService } from './otp.service';
 import { type SessionMeta, TokenService } from './token.service';
 
@@ -41,6 +42,7 @@ export class AuthService {
     private readonly token: TokenService,
     private readonly redis: RedisService,
     private readonly config: AppConfig,
+    private readonly referrals: ReferralsService,
   ) {}
 
   async register(dto: RegisterInput): Promise<OtpChallenge> {
@@ -71,6 +73,7 @@ export class AuthService {
         },
       });
       await this.ensureProfile(user.id, dto.role);
+      await this.referrals.recordSignup(user.id, dto.referredByCode);
     }
 
     const resendIn = await this.otp.issue(dto.phone, 'SIGNUP');
@@ -95,6 +98,7 @@ export class AuthService {
         data: { status: 'ACTIVE' },
         include: { masterProfile: true },
       });
+      await this.referrals.activateOnVerify(current.id);
     }
 
     const tokens = await this.token.issue(this.claims(current), meta);

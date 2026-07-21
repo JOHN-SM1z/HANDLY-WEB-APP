@@ -23,6 +23,8 @@ const prisma = new PrismaService();
 const config = new AppConfig(loadEnv());
 const stubGateway = { emitToUser: () => {} };
 const stubNotifications = { notify: async () => {} };
+const stubTrust = { recomputeTrustTier: async () => {} };
+const stubPenalties = { recordEvent: async () => {} };
 
 const orders = new OrdersService(
   prisma,
@@ -31,6 +33,8 @@ const orders = new OrdersService(
   {} as never, // DispatchService — unused by job-execution methods
   stubGateway as never,
   stubNotifications as never,
+  stubTrust as never, // TrustService — recompute is a no-op here, tested separately
+  stubPenalties as never, // PenaltiesService — tested separately (cancelByMaster below)
   {} as never, // StorageProvider — unused by job-execution methods
 );
 

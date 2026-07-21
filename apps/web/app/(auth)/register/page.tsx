@@ -1,13 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { type FormEvent, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type FormEvent, Suspense, useState } from 'react';
 import { registerSchema, Role } from '@handly/contracts';
 import { Alert } from '@/components/ui/alert';
 import { AuthHeader } from '@/components/ui/auth-header';
 import { AuthTabs } from '@/components/ui/auth-tabs';
 import { Button } from '@/components/ui/button';
 import { PhoneIcon } from '@/components/ui/icons';
+import { Logo } from '@/components/ui/logo';
 import { PasswordField } from '@/components/ui/password-field';
 import { TextField } from '@/components/ui/text-field';
 import { cn } from '@/lib/cn';
@@ -21,12 +22,14 @@ const roleOptions: Array<{ value: SignupRole; label: string; hint: string }> = [
   { value: Role.MASTER, label: 'Usta', hint: 'Xizmat ko‘rsataman' },
 ];
 
-export default function RegisterPage() {
+function RegisterInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [role, setRole] = useState<SignupRole>(Role.CUSTOMER);
   const [phone, setPhone] = useState('+998 ');
   const [password, setPassword] = useState('');
+  const [referredByCode, setReferredByCode] = useState(searchParams.get('ref') ?? '');
   const [errors, setErrors] = useState<{ phone?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +38,13 @@ export default function RegisterPage() {
     e.preventDefault();
     setFormError(null);
 
-    const parsed = registerSchema.safeParse({ phone, password, role, locale: 'uz' });
+    const parsed = registerSchema.safeParse({
+      phone,
+      password,
+      role,
+      locale: 'uz',
+      referredByCode: referredByCode.trim() || undefined,
+    });
     if (!parsed.success) {
       const f = parsed.error.flatten().fieldErrors;
       setErrors({ phone: f.phone?.[0], password: f.password?.[0] });
@@ -113,6 +122,12 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
           />
+          <TextField
+            label="Referal kod (ixtiyoriy)"
+            placeholder="Do'stingizning kodi"
+            value={referredByCode}
+            onChange={(e) => setReferredByCode(e.target.value)}
+          />
 
           <Button type="submit" size="lg" fullWidth loading={loading}>
             Davom etish
@@ -124,5 +139,21 @@ export default function RegisterPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[100dvh] items-center justify-center">
+          <div className="animate-pulse">
+            <Logo size={44} />
+          </div>
+        </main>
+      }
+    >
+      <RegisterInner />
+    </Suspense>
   );
 }

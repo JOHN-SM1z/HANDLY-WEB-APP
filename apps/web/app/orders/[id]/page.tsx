@@ -18,10 +18,13 @@ import { Badge, Rating } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, CheckIcon, MapPinIcon, SparkleIcon, VideoIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
+import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/api';
 import { formatSom, formatSomRange } from '@/lib/format';
+import { guaranteeApi } from '@/lib/guarantee';
 import { ordersApi } from '@/lib/orders';
 import { paymentsApi } from '@/lib/payments';
+import { reviewsApi } from '@/lib/reviews';
 import { useSocketEvent } from '@/lib/socket';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
@@ -50,6 +53,14 @@ export default function OrderDetailPage() {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('MOCK');
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [showGuaranteeForm, setShowGuaranteeForm] = useState(false);
+  const [guaranteeReason, setGuaranteeReason] = useState('');
+  const [submittingGuarantee, setSubmittingGuarantee] = useState(false);
+  const [guaranteeError, setGuaranteeError] = useState<string | null>(null);
 
   const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ['order', params.id],
@@ -61,6 +72,18 @@ export default function OrderDetailPage() {
     queryKey: ['order', params.id, 'payments'],
     queryFn: () => paymentsApi.list(params.id),
     enabled: Boolean(user) && Boolean(params.id) && Boolean(order && PAYABLE_STATUSES.includes(order.status)),
+  });
+
+  const { data: review, refetch: refetchReview } = useQuery({
+    queryKey: ['order', params.id, 'review'],
+    queryFn: () => reviewsApi.getForOrder(params.id),
+    enabled: Boolean(user) && Boolean(params.id) && order?.status === 'CLOSED',
+  });
+
+  const { data: guaranteeClaim, refetch: refetchGuaranteeClaim } = useQuery({
+    queryKey: ['order', params.id, 'guarantee-claim'],
+    queryFn: () => guaranteeApi.getForOrder(params.id),
+    enabled: Boolean(user) && Boolean(params.id) && order?.status === 'CLOSED',
   });
 
   // Live push while dispatch is running (M3) — a master accepting/the pool
@@ -126,6 +149,35 @@ export default function OrderDetailPage() {
       setPayError(err instanceof ApiError ? err.message : "To'lovda xatolik");
     } finally {
       setPaying(false);
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!order || reviewRating === 0) return;
+    setSubmittingReview(true);
+    setReviewError(null);
+    try {
+      await reviewsApi.create(order.id, { rating: reviewRating, comment: reviewComment.trim() || undefined });
+      await refetchReview();
+    } catch (err) {
+      setReviewError(err instanceof ApiError ? err.message : 'Baho qo\'yishda xatolik');
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
+  async function handleFileGuaranteeClaim() {
+    if (!order || guaranteeReason.trim().length < 10) return;
+    setSubmittingGuarantee(true);
+    setGuaranteeError(null);
+    try {
+      await guaranteeApi.fileClaim(order.id, { reason: guaranteeReason.trim() });
+      setShowGuaranteeForm(false);
+      await refetchGuaranteeClaim();
+    } catch (err) {
+      setGuaranteeError(err instanceof ApiError ? err.message : "Kafolat so'rovida xatolik");
+    } finally {
+      setSubmittingGuarantee(false);
     }
   }
 
@@ -332,6 +384,104 @@ export default function OrderDetailPage() {
                     />
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+
+          {order.status === 'CLOSED' && (
+            <div className="flex flex-col gap-3 rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
+              <p className="text-sm font-semibold text-content-primary">Ustaga baho bering</p>
+              {reviewError && <Alert>{reviewError}</Alert>}
+              {review ? (
+                <div>
+                  <Rating value={review.rating.toFixed(2)} />
+                  {review.comment && <p className="mt-1 text-sm text-content-secondary">{review.comment}</p>}
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        aria-label={`${n} yulduz`}
+                        aria-pressed={reviewRating >= n}
+                        onClick={() => setReviewRating(n)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-md border text-lg ${
+                          reviewRating >= n
+                            ? 'border-primary bg-primary-soft text-primary-soft-fg'
+                            : 'border-border-secondary text-content-muted'
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    placeholder="Izoh (ixtiyoriy)"
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                  />
+                  <Button
+                    fullWidth
+                    loading={submittingReview}
+                    disabled={reviewRating === 0}
+                    onClick={() => void handleSubmitReview()}
+                  >
+                    Yuborish
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {order.status === 'CLOSED' && (
+            <div className="flex flex-col gap-3 rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
+              <p className="text-sm font-semibold text-content-primary">Handly Kafolati</p>
+              {guaranteeError && <Alert>{guaranteeError}</Alert>}
+              {guaranteeClaim ? (
+                <div className="flex items-center justify-between rounded-lg bg-background-secondary p-3">
+                  <p className="text-sm text-content-secondary">{guaranteeClaim.reason}</p>
+                  <Badge
+                    variant={
+                      guaranteeClaim.status === 'APPROVED'
+                        ? 'green'
+                        : guaranteeClaim.status === 'REJECTED'
+                          ? 'red'
+                          : 'gray'
+                    }
+                  >
+                    {guaranteeClaim.status === 'OPEN' && 'Yuborilgan'}
+                    {guaranteeClaim.status === 'UNDER_REVIEW' && "Ko'rib chiqilmoqda"}
+                    {guaranteeClaim.status === 'APPROVED' && 'Tasdiqlandi'}
+                    {guaranteeClaim.status === 'REJECTED' && 'Rad etildi'}
+                  </Badge>
+                </div>
+              ) : showGuaranteeForm ? (
+                <>
+                  <Textarea
+                    placeholder="Muammoni tasvirlab bering (kamida 10 ta belgi)"
+                    value={guaranteeReason}
+                    onChange={(e) => setGuaranteeReason(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setShowGuaranteeForm(false)}>
+                      Bekor qilish
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      loading={submittingGuarantee}
+                      disabled={guaranteeReason.trim().length < 10}
+                      onClick={() => void handleFileGuaranteeClaim()}
+                    >
+                      Yuborish
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <Button variant="outline" fullWidth onClick={() => setShowGuaranteeForm(true)}>
+                  Kafolat so&apos;rovi yuborish
+                </Button>
               )}
             </div>
           )}

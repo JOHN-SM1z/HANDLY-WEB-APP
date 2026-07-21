@@ -12,6 +12,7 @@ import {
 } from '../../infra/queue/queue.constants';
 import { canTransition } from '../orders/order-state';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PenaltiesService } from '../penalties/penalties.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { findEligibleCandidates } from './dispatch-eligibility';
 import { requiredTierForComplexity, scoreCandidate, weightedRandomPick } from './dispatch-scoring';
@@ -27,6 +28,7 @@ export class DispatchService {
     private readonly config: AppConfig,
     private readonly notifications: NotificationsService,
     private readonly realtime: RealtimeGateway,
+    private readonly penalties: PenaltiesService,
     @Inject(DISPATCH_QUEUE) private readonly queue: Queue,
   ) {}
 
@@ -50,6 +52,9 @@ export class DispatchService {
     await this.notifications.notify(full.masterId, 'OFFER_EXPIRED', 'Taklif muddati tugadi', 'Javob berish vaqti tugadi.', {
       orderId: full.orderId,
     });
+    // Batch 2: a timed-out (not explicitly declined) offer is the penalty
+    // engine's "late response" trigger — an honest decline is not penalized.
+    await this.penalties.recordEvent(full.masterId, 'LATE_RESPONSE', full.orderId);
     await this.cascadeNext(full.orderId, 1);
   }
 

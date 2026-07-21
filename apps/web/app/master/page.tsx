@@ -16,6 +16,9 @@ import { TextField } from '@/components/ui/text-field';
 import { ApiError } from '@/lib/api';
 import { formatSom } from '@/lib/format';
 import { masterApi } from '@/lib/master';
+import { subscriptionsApi } from '@/lib/subscriptions';
+import { trustApi } from '@/lib/trust';
+import { verificationApi } from '@/lib/verification';
 import { useSocketEvent } from '@/lib/socket';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
@@ -92,6 +95,7 @@ export default function MasterDashboardPage() {
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [finalAmount, setFinalAmount] = useState('');
   const [jobError, setJobError] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const evidenceInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -111,6 +115,21 @@ export default function MasterDashboardPage() {
   const { data: currentJob } = useQuery({
     queryKey: ['master', 'current-job'],
     queryFn: masterApi.getCurrentJob,
+    enabled: Boolean(user),
+  });
+  const { data: trust } = useQuery({
+    queryKey: ['master', 'trust'],
+    queryFn: trustApi.getMine,
+    enabled: Boolean(user),
+  });
+  const { data: verification } = useQuery({
+    queryKey: ['master', 'verification'],
+    queryFn: verificationApi.getMine,
+    enabled: Boolean(user),
+  });
+  const { data: subscription } = useQuery({
+    queryKey: ['master', 'subscription'],
+    queryFn: subscriptionsApi.getMine,
     enabled: Boolean(user),
   });
 
@@ -170,6 +189,22 @@ export default function MasterDashboardPage() {
       masterApi.uploadJobMedia(orderId, file),
     onSuccess: () => void invalidateCurrentJob(),
     onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Yuklashda xatolik'),
+  });
+  const cancelJob = useMutation({
+    mutationFn: (orderId: string) => masterApi.cancelJob(orderId),
+    onSuccess: () => {
+      setConfirmingCancel(false);
+      void invalidateCurrentJob();
+    },
+    onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi'),
+  });
+  const submitVerification = useMutation({
+    mutationFn: () => verificationApi.submit(),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['master', 'verification'] }),
+  });
+  const upgradeSubscription = useMutation({
+    mutationFn: () => subscriptionsApi.upgrade(),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['master', 'subscription'] }),
   });
 
   useEffect(() => {
@@ -264,6 +299,36 @@ export default function MasterDashboardPage() {
           Ishni boshlash
         </Button>
       )}
+
+      {(currentJob.status === 'ASSIGNED' || currentJob.status === 'EN_ROUTE') &&
+        (confirmingCancel ? (
+          <div className="flex flex-col gap-2 rounded-md border border-danger-solid bg-danger-bg p-2.5">
+            <p className="text-xs text-danger-fg">
+              Bekor qilish jarima bilan qayd etiladi. Davom etasizmi?
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1" onClick={() => setConfirmingCancel(false)}>
+                Yo&apos;q
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1"
+                loading={cancelJob.isPending}
+                onClick={() => {
+                  setJobError(null);
+                  cancelJob.mutate(currentJob.id);
+                }}
+              >
+                Ha, bekor qilish
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" size="sm" fullWidth onClick={() => setConfirmingCancel(true)}>
+            Ishni bekor qilish
+          </Button>
+        ))}
 
       {(currentJob.status === 'IN_PROGRESS' || currentJob.status === 'COMPLETED') && (
         <div className="flex gap-2">
@@ -368,7 +433,7 @@ export default function MasterDashboardPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-px border-t border-white/10 bg-white/10">
+        <div className="grid grid-cols-3 gap-px border-t border-white/10 bg-white/10">
           <div className="bg-ink px-3 py-3.5 text-center">
             <div className="text-lg font-bold">{profile.jobsDone}</div>
             <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Bajarilgan ishlar</div>
@@ -376,6 +441,10 @@ export default function MasterDashboardPage() {
           <div className="bg-ink px-3 py-3.5 text-center">
             <div className="text-lg font-bold text-primary">{profile.ratingAvg.toFixed(2)}</div>
             <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Reyting</div>
+          </div>
+          <div className="bg-ink px-3 py-3.5 text-center">
+            <div className="text-lg font-bold text-primary">T{trust?.tier ?? 0}</div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-wide opacity-65">Ishonch darajasi</div>
           </div>
         </div>
       </div>
@@ -385,6 +454,50 @@ export default function MasterDashboardPage() {
         {!profile.isOnline && (
           <div className="rounded-lg border border-border-tertiary bg-background-secondary px-4 py-3.5 text-center text-sm text-content-secondary">
             Yangi takliflarni ko&apos;rish uchun onlayn bo&apos;ling.
+          </div>
+        )}
+
+        {profile.verificationStatus === 'PENDING' && (
+          <div className="rounded-lg border border-info-bg bg-info-bg px-4 py-3 text-center text-sm text-info-fg">
+            Tasdiqlash so&apos;rovingiz ko&apos;rib chiqilmoqda.
+          </div>
+        )}
+        {(profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED') && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border-tertiary bg-surface px-4 py-3 shadow-card">
+            <div>
+              <p className="text-sm font-medium text-content-primary">
+                {profile.verificationStatus === 'REJECTED' ? 'Tasdiqlash rad etildi' : 'Profilingizni tasdiqlang'}
+              </p>
+              <p className="mt-0.5 text-xs text-content-muted">
+                {verification?.note || "Tasdiqlangan usta ko'proq buyurtma oladi"}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              loading={submitVerification.isPending}
+              onClick={() => submitVerification.mutate()}
+            >
+              Yuborish
+            </Button>
+          </div>
+        )}
+
+        {subscription && !subscription.isPremiumActive && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary bg-primary-soft px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-primary-soft-fg">Premium&apos;ga o&apos;ting</p>
+              <p className="mt-0.5 text-xs text-primary-soft-fg opacity-80">
+                Ko&apos;proq ko&apos;rinish va ustuvor buyurtmalar — 14 kun bepul
+              </p>
+            </div>
+            <Button size="sm" variant="brand" loading={upgradeSubscription.isPending} onClick={() => upgradeSubscription.mutate()}>
+              Sinab ko&apos;rish
+            </Button>
+          </div>
+        )}
+        {subscription?.isPremiumActive && (
+          <div className="rounded-lg border border-primary bg-primary-soft px-4 py-2.5 text-center text-xs font-medium text-primary-soft-fg">
+            Premium faol{subscription.status === 'TRIAL' ? ' (sinov muddati)' : ''}
           </div>
         )}
         {offer && countdown !== null && countdown > 0 && (
@@ -403,6 +516,9 @@ export default function MasterDashboardPage() {
           <div className="mb-3 flex items-baseline justify-between">
             <span className="text-lg font-bold tracking-tight">Joriy ish</span>
             <div className="flex gap-3">
+              <Link href="/master/analytics" className="text-xs font-medium text-primary">
+                Statistika
+              </Link>
               <Link href="/master/earnings" className="text-xs font-medium text-primary">
                 Daromad
               </Link>

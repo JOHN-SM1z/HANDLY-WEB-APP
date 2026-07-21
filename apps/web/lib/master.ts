@@ -28,6 +28,9 @@ export const masterApi = {
     api.post<OrderDto>(`/me/master/current-job/${orderId}/start`, undefined, true),
   completeService: (orderId: string, finalAmount: number) =>
     api.post<OrderDto>(`/me/master/current-job/${orderId}/complete`, { finalAmount }, true),
+  /** Master backs out of an ASSIGNED/EN_ROUTE job (Batch 2) — always penalized. */
+  cancelJob: (orderId: string, reason?: string) =>
+    api.post<OrderDto>(`/me/master/current-job/${orderId}/cancel`, { reason }, true),
   getJobHistory: (cursor?: string) => {
     const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
     return api.get<OrderListPage>(`/me/master/jobs${qs}`);

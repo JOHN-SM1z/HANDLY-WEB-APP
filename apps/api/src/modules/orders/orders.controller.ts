@@ -14,15 +14,19 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
+  guaranteeClaimCreateSchema,
   orderCreateSchema,
   orderSubmitSchema,
   orderUpdateSchema,
   OrderStatus,
   paymentInitiateSchema,
+  reviewCreateSchema,
 } from '@handly/contracts';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { ZodValidationPipe } from '../../common/http/zod-validation.pipe';
+import { GuaranteeService } from '../guarantee/guarantee.service';
 import { PaymentsService } from '../payments/payments.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { OrdersService } from './orders.service';
 
 @Roles('CUSTOMER')
@@ -31,6 +35,8 @@ export class OrdersController {
   constructor(
     private readonly orders: OrdersService,
     private readonly payments: PaymentsService,
+    private readonly reviews: ReviewsService,
+    private readonly guarantee: GuaranteeService,
   ) {}
 
   @Post()
@@ -136,5 +142,41 @@ export class OrdersController {
   @Get(':id/payments')
   listPayments(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.payments.list(userId, id);
+  }
+
+  // ─────────────── Reviews (Batch 2) ───────────────
+
+  @Post(':id/review')
+  @HttpCode(201)
+  createReview(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(reviewCreateSchema)) dto: ReturnType<typeof reviewCreateSchema.parse>,
+  ) {
+    return this.reviews.create(userId, id, dto.rating, dto.comment);
+  }
+
+  @Get(':id/review')
+  getReview(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    // Ownership isn't re-checked here beyond the order lookup below since a
+    // review is safe to read by its own customer only — reuse getOne's guard.
+    return this.orders.getOne(userId, id).then(() => this.reviews.getForOrder(id));
+  }
+
+  // ─────────────── Handly Guarantee (Batch 2) ───────────────
+
+  @Post(':id/guarantee-claim')
+  @HttpCode(201)
+  fileGuaranteeClaim(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(guaranteeClaimCreateSchema)) dto: ReturnType<typeof guaranteeClaimCreateSchema.parse>,
+  ) {
+    return this.guarantee.fileClaim(userId, id, dto.reason);
+  }
+
+  @Get(':id/guarantee-claim')
+  getGuaranteeClaim(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.guarantee.getForOrder(userId, id);
   }
 }

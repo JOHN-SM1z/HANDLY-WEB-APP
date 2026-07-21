@@ -18,6 +18,8 @@ export interface EligibleCandidate {
   distanceM: number;
   ratingAvg: number;
   jobsDone: number;
+  /** Active Premium subscription (Batch 2) — computed inline, no extra query (avoids N+1). */
+  isPremium: boolean;
 }
 
 export interface FindEligibleCandidatesParams {
@@ -48,17 +50,24 @@ export async function findEligibleCandidates(
   const { orderId, categoryId, requiredTier, todayDateStr, radiusMultiplier, limit } = params;
 
   return prisma.$queryRaw<EligibleCandidate[]>(Prisma.sql`
-    SELECT "masterId", "distanceM", "ratingAvg", "jobsDone"
+    SELECT "masterId", "distanceM", "ratingAvg", "jobsDone", "isPremium"
     FROM (
       SELECT DISTINCT ON (mp."userId")
         mp."userId" AS "masterId",
         ST_Distance(sa."centerPoint", o."location")::int AS "distanceM",
         mp."ratingAvg"::float AS "ratingAvg",
-        mp."jobsDone" AS "jobsDone"
+        mp."jobsDone" AS "jobsDone",
+        COALESCE(
+          ms2.plan = 'PREMIUM' AND (
+            ms2.status = 'ACTIVE' OR (ms2.status = 'TRIAL' AND ms2."trialEndsAt" > now())
+          ),
+          false
+        ) AS "isPremium"
       FROM master_profiles mp
       JOIN users u ON u.id = mp."userId" AND u.status = 'ACTIVE'
       JOIN master_skills ms ON ms."masterId" = mp."userId" AND ms."categoryId" = ${categoryId}::uuid
       JOIN service_areas sa ON sa."masterId" = mp."userId"
+      LEFT JOIN master_subscriptions ms2 ON ms2."masterId" = mp."userId"
       CROSS JOIN orders o
       WHERE o.id = ${orderId}::uuid
         AND o."location" IS NOT NULL

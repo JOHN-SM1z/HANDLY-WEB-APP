@@ -134,6 +134,13 @@ enum NotificationType {
   // M5 — payments
   PAYMENT_SUCCEEDED
   PAYMENT_FAILED
+  // Batch 2 — trust, safety & growth
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  GUARANTEE_CLAIM_DECIDED
+  PENALTY_ISSUED
+  REFERRAL_REWARDED
+  ORDER_CANCELLED_BY_MASTER
 }
 
 // ─────────────────────────── Identity ───────────────────────────
@@ -156,6 +163,12 @@ model User {
   orders          Order[]
   notifications   Notification[]
   payments        Payment[]
+  reviewsWritten  Review[]
+  guaranteeClaims GuaranteeClaim[]
+  cashbackRecords CashbackRecord[]
+  // Batch 2 referrals: this user as the referrer (many) vs. as the referee (at most one).
+  referralsMade   Referral[]       @relation("ReferrerOf")
+  referredBy      Referral?        @relation("ReferredBy")
 
   @@map("users")
 }
@@ -199,6 +212,9 @@ model MasterProfile {
   verifications Verification[]
   dispatches    OrderDispatch[]
   assignedOrders Order[]
+  reviews         Review[]
+  penaltyRecords  PenaltyRecord[]
+  subscription    MasterSubscription?
 
   @@index([isOnline])
   @@map("master_profiles")
@@ -402,6 +418,9 @@ model Order {
   statusHistory OrderStatusHistory[]
   dispatches    OrderDispatch[]
   payments      Payment[]
+  review          Review?
+  guaranteeClaim  GuaranteeClaim?
+  penaltyRecords  PenaltyRecord[]
 
   @@index([customerId, createdAt])
   @@index([status])
@@ -541,4 +560,178 @@ model Notification {
 
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+// ─────────────────────────── Reviews (Batch 2) ───────────────────────────
+// One review per order (customer → master), only for CLOSED orders. Real
+// data source for MasterProfile.ratingAvg (recomputed on each new review),
+// the trust score's rating factor, penalty's "poor quality"/"complaint"
+// triggers, and master analytics' rating trend — replaces what was, until
+// now, a static/seed-only ratingAvg value.
+model Review {
+  id         String        @id @default(uuid()) @db.Uuid
+  orderId    String        @unique @db.Uuid
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId String        @db.Uuid
+  customer   User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  masterId   String        @db.Uuid
+  master     MasterProfile @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  rating     Int
+  comment    String?
+  createdAt  DateTime      @default(now())
+
+  @@index([masterId, createdAt])
+  @@map("reviews")
+}
+
+// ─────────────────────────── Penalty engine (Batch 2) ───────────────────────────
+enum PenaltyEventType {
+  CANCELLATION
+  NO_SHOW
+  LATE_RESPONSE
+  POOR_QUALITY
+  CUSTOMER_COMPLAINT
+}
+
+enum PenaltySeverity {
+  MINOR
+  MODERATE
+  SEVERE
+}
+
+// One row per penalty-worthy event. Points/severity come from a single
+// PENALTY_RULES config table (apps/api/src/modules/penalties/penalty-rules.ts),
+// never hardcoded at each call site. Never auto-bans — only auto-recomputes
+// the master's trust tier (see TrustService), same "assists, never gates"
+// spirit as the rest of this codebase's automation.
+model PenaltyRecord {
+  id        String            @id @default(uuid()) @db.Uuid
+  masterId  String            @db.Uuid
+  master    MasterProfile     @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  eventType PenaltyEventType
+  severity  PenaltySeverity
+  points    Int
+  orderId   String?           @db.Uuid
+  order     Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  note      String?
+  createdAt DateTime          @default(now())
+
+  @@index([masterId, createdAt])
+  @@map("penalty_records")
+}
+
+// ─────────────────────────── Handly Guarantee (Batch 2) ───────────────────────────
+enum GuaranteeClaimStatus {
+  OPEN
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+// One claim per order. No automated adjudication — decidedBy/decidedAt/note
+// mirrors the existing Verification model's admin-decision shape so a future
+// admin dashboard (Batch 3) can slot in without a new pattern.
+model GuaranteeClaim {
+  id             String               @id @default(uuid()) @db.Uuid
+  orderId        String               @unique @db.Uuid
+  order          Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId     String               @db.Uuid
+  customer       User                 @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  reason         String
+  status         GuaranteeClaimStatus @default(OPEN)
+  decidedBy      String?              @db.Uuid
+  decidedAt      DateTime?
+  resolutionNote String?
+  createdAt      DateTime             @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([status])
+  @@map("guarantee_claims")
+}
+
+// ─────────────────────────── Referrals & cashback (Batch 2) ───────────────────────────
+// User.referralCode already exists (M1) — this models the actual referral
+// RELATIONSHIP once someone signs up using that code, plus its lifecycle:
+// PENDING (registered, not yet verified) → ACTIVE (account verified) →
+// REWARDED (referee's first successful payment granted the referrer cashback).
+enum ReferralStatus {
+  PENDING
+  ACTIVE
+  REWARDED
+}
+
+model Referral {
+  id         String         @id @default(uuid()) @db.Uuid
+  referrerId String         @db.Uuid
+  referrer   User           @relation("ReferrerOf", fields: [referrerId], references: [id], onDelete: Cascade)
+  // A user can only ever be referred once.
+  refereeId  String         @unique @db.Uuid
+  referee    User           @relation("ReferredBy", fields: [refereeId], references: [id], onDelete: Cascade)
+  status     ReferralStatus @default(PENDING)
+  rewardedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  cashbackRecords CashbackRecord[]
+
+  @@index([referrerId])
+  @@map("referrals")
+}
+
+enum CashbackSourceType {
+  REFERRAL_REWARD
+  PROMOTION
+}
+
+// A ledger-style record, not a wallet — no withdrawal/redemption flow exists
+// yet (explicitly out of scope this batch). REDEEMED is modeled for when
+// that later system lands; nothing sets it today.
+enum CashbackStatus {
+  ELIGIBLE
+  REDEEMED
+}
+
+model CashbackRecord {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @db.Uuid
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     Int
+  sourceType CashbackSourceType
+  status     CashbackStatus     @default(ELIGIBLE)
+  referralId String?            @db.Uuid
+  referral   Referral?          @relation(fields: [referralId], references: [id], onDelete: SetNull)
+  note       String?
+  createdAt  DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@map("cashback_records")
+}
+
+// ─────────────────────────── Master subscriptions (Batch 2) ───────────────────────────
+// Free tier is the implicit default (no row) — a row only ever gets created
+// on the first upgrade action. Not connected to any payment provider yet
+// (explicitly out of scope this batch); when real billing lands, it reuses
+// the existing Payment/PaymentProvider architecture rather than a parallel one.
+enum SubscriptionPlan {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  EXPIRED
+  CANCELLED
+}
+
+model MasterSubscription {
+  masterId         String              @id @db.Uuid
+  master           MasterProfile       @relation(fields: [masterId], references: [userId], onDelete: Cascade)
+  plan             SubscriptionPlan    @default(FREE)
+  status           SubscriptionStatus  @default(ACTIVE)
+  trialEndsAt      DateTime?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@map("master_subscriptions")
 }

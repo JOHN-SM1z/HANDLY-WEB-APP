@@ -28,7 +28,9 @@ import { AiService } from '../ai/ai.service';
 import type { DiagnoseImage } from '../ai/ai-provider';
 import { DispatchService } from '../dispatch/dispatch.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PenaltiesService } from '../penalties/penalties.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { TrustService } from '../trust/trust.service';
 import { ACTIVE_MASTER_JOB_STATUSES, canTransition, EDITABLE_STATUSES } from './order-state';
 import { computeQuote } from './pricing';
 
@@ -74,6 +76,8 @@ export class OrdersService {
     private readonly dispatch: DispatchService,
     private readonly realtime: RealtimeGateway,
     private readonly notifications: NotificationsService,
+    private readonly trust: TrustService,
+    private readonly penalties: PenaltiesService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
@@ -455,6 +459,54 @@ export class OrdersService {
       'Mijoz ishni qabul qildi va yopdi.',
       { orderId },
     );
+    // Batch 2: jobsDone just changed — recompute trust now that it's real.
+    await this.trust.recomputeTrustTier(order.masterId);
+    return this.toDto(updated);
+  }
+
+  /**
+   * Master backs out of an ASSIGNED/EN_ROUTE job (Batch 2 — previously
+   * unreachable; the penalty engine's primary trigger needs this to be a
+   * real action). Always penalized — cancelling is never cost-free for the
+   * master, though it never auto-bans (see PenaltiesService).
+   */
+  async cancelByMaster(masterId: string, orderId: string, reason?: string): Promise<OrderDto> {
+    const order = await this.getOwnedByMaster(masterId, orderId);
+    if (!canTransition(order.status as OrderStatus, OrderStatus.CANCELLED_BY_MASTER)) {
+      throw new ConflictException("Bu holatda buyurtmani bekor qilib bo'lmaydi");
+    }
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: { status: OrderStatus.CANCELLED_BY_MASTER, cancelledAt: new Date() },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException("Bu holatda buyurtmani bekor qilib bo'lmaydi");
+      }
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          fromStatus: order.status,
+          toStatus: OrderStatus.CANCELLED_BY_MASTER,
+          actorId: masterId,
+          note: reason,
+        },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: FULL_INCLUDE });
+    });
+
+    this.realtime.emitToUser(order.customerId, 'order:updated', {
+      orderId,
+      status: OrderStatus.CANCELLED_BY_MASTER,
+    });
+    await this.notifications.notify(
+      order.customerId,
+      'ORDER_CANCELLED_BY_MASTER',
+      'Usta bekor qildi',
+      "Afsuski, tayinlangan usta buyurtmani bekor qildi. Qo'llab-quvvatlash bilan bog'laning.",
+      { orderId },
+    );
+    await this.penalties.recordEvent(masterId, 'CANCELLATION', orderId, reason);
     return this.toDto(updated);
   }
 

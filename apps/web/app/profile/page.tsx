@@ -107,17 +107,30 @@ export default function ProfilePage() {
               <span className="flex-1 text-sm font-medium text-content-primary">Daromad</span>
               <ChevronRightIcon width={16} height={16} className="text-content-muted" />
             </Link>
+            <Link
+              href="/master/analytics"
+              className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
+            >
+              <span className="flex-1 text-sm font-medium text-content-primary">Statistika</span>
+              <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+            </Link>
           </>
         )}
 
-        {me?.referralCode && (
-          <div className="rounded-xl border border-border-tertiary bg-background-secondary p-4">
+        <Link
+          href="/referrals"
+          className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-background-secondary px-4 py-3 shadow-card"
+        >
+          <div className="flex-1">
             <p className="text-xs uppercase tracking-wide text-content-muted">Referal kod</p>
-            <p className="mt-1 font-mono text-lg font-semibold tracking-widest text-content-primary">
-              {me.referralCode}
-            </p>
+            {me?.referralCode && (
+              <p className="mt-0.5 font-mono text-base font-semibold tracking-widest text-content-primary">
+                {me.referralCode}
+              </p>
+            )}
           </div>
-        )}
+          <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+        </Link>
 
         <section>
           <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-content-muted">

@@ -155,6 +155,12 @@ export const orderCompleteSchema = z.object({
 });
 export type OrderCompleteInput = z.infer<typeof orderCompleteSchema>;
 
+/** Master cancels an ASSIGNED/EN_ROUTE job (Batch 2) — always penalized, see PenaltiesService. */
+export const orderCancelByMasterSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+});
+export type OrderCancelByMasterInput = z.infer<typeof orderCancelByMasterSchema>;
+
 // ─────────────── Response shapes ───────────────
 export interface AiDiagnosisDto {
   issueSummary: string;

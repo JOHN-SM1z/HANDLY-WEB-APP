@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/roles.guard';
 import { parseDurationSeconds } from '../../common/util/duration';
 import { AppConfig } from '../../infra/config/app-config';
+import { ReferralsModule } from '../referrals/referrals.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
@@ -14,6 +15,7 @@ import { TokenService } from './token.service';
 @Module({
   imports: [
     SmsModule,
+    ReferralsModule,
     JwtModule.registerAsync({
       inject: [AppConfig],
       useFactory: (config: AppConfig) => ({

@@ -32,6 +32,8 @@ export const registerSchema = z.object({
   password: passwordSchema,
   role: signupRoleSchema.default(Role.CUSTOMER),
   locale: localeSchema,
+  /** Optional referrer's own User.referralCode (Batch 2 growth foundation). */
+  referredByCode: z.string().trim().min(1).max(20).optional(),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 

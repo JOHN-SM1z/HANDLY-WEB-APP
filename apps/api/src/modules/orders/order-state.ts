@@ -1,17 +1,20 @@
 import { OrderStatus } from '@handly/contracts';
 
 /**
- * M2+M3+M4 transition table (customer + dispatch + job-execution flow) —
- * the guard stays the single authority; every state-changing service method
- * calls canTransition before writing.
+ * M2+M3+M4+Batch2 transition table (customer + dispatch + job-execution +
+ * master-cancellation flow) — the guard stays the single authority; every
+ * state-changing service method calls canTransition before writing.
  *
  * Job execution (M4): ASSIGNED → EN_ROUTE → IN_PROGRESS → COMPLETED → CLOSED,
  * one state per master action (en-route, start, complete) plus a customer
- * confirmation (CLOSED). CANCELLED_BY_MASTER and DISPUTED are deliberately
- * left unreachable here for now (no master-cancel or dispute-resolution flow
- * is in this milestone's approved scope) — the enum values already exist in
- * schema for when that future work lands, matching how EXPIRED/CANCELLED_BY_*
- * were pre-declared ahead of M3.
+ * confirmation (CLOSED).
+ *
+ * Master cancellation (Batch 2): a master can back out of ASSIGNED/EN_ROUTE
+ * (not once IN_PROGRESS — work is happening) — this is the penalty engine's
+ * "master cancellation" trigger, previously modeled in the enum but
+ * deliberately unreachable until this batch actually needed it. DISPUTED
+ * stays unreachable (no dispute-resolution flow yet) — the enum value exists
+ * in schema for when that future work lands.
  */
 const TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   [OrderStatus.DRAFT]: [OrderStatus.PRICED, OrderStatus.CANCELLED_BY_CUSTOMER],
@@ -30,8 +33,16 @@ const TRANSITIONS: Partial<Record<OrderStatus, OrderStatus[]>> = {
   ],
   // Customer can still back out before the master heads over or starts work;
   // once IN_PROGRESS, cancellation is no longer offered (work is happening).
-  [OrderStatus.ASSIGNED]: [OrderStatus.EN_ROUTE, OrderStatus.CANCELLED_BY_CUSTOMER],
-  [OrderStatus.EN_ROUTE]: [OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED_BY_CUSTOMER],
+  [OrderStatus.ASSIGNED]: [
+    OrderStatus.EN_ROUTE,
+    OrderStatus.CANCELLED_BY_CUSTOMER,
+    OrderStatus.CANCELLED_BY_MASTER,
+  ],
+  [OrderStatus.EN_ROUTE]: [
+    OrderStatus.IN_PROGRESS,
+    OrderStatus.CANCELLED_BY_CUSTOMER,
+    OrderStatus.CANCELLED_BY_MASTER,
+  ],
   [OrderStatus.IN_PROGRESS]: [OrderStatus.COMPLETED],
   // Customer confirmation closes the order; a customer who never confirms
   // simply leaves it COMPLETED (no auto-close worker in this milestone).

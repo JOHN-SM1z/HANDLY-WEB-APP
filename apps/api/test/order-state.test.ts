@@ -100,10 +100,23 @@ test('CLOSED is terminal — no further transitions modeled', () => {
   assert.equal(canTransition(OrderStatus.CLOSED, OrderStatus.CANCELLED_BY_CUSTOMER), false);
 });
 
-test('CANCELLED_BY_MASTER and DISPUTED are deliberately unreachable this milestone', () => {
+test('DISPUTED is deliberately unreachable (no dispute-resolution flow yet)', () => {
   for (const from of Object.values(OrderStatus)) {
-    assert.equal(canTransition(from, OrderStatus.CANCELLED_BY_MASTER), false, from);
     assert.equal(canTransition(from, OrderStatus.DISPUTED), false, from);
+  }
+});
+
+// ─────────────── Batch 2: master cancellation (penalty engine trigger) ───────────────
+
+test('a master can cancel from ASSIGNED or EN_ROUTE', () => {
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.CANCELLED_BY_MASTER), true);
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.CANCELLED_BY_MASTER), true);
+});
+
+test('a master cannot cancel once IN_PROGRESS or from any other status', () => {
+  for (const from of Object.values(OrderStatus)) {
+    if (from === OrderStatus.ASSIGNED || from === OrderStatus.EN_ROUTE) continue;
+    assert.equal(canTransition(from, OrderStatus.CANCELLED_BY_MASTER), false, from);
   }
 });
 

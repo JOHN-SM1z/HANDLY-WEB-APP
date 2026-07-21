@@ -17,13 +17,20 @@ import { z } from 'zod';
 import {
   masterAvailabilityUpdateSchema,
   masterProfileUpdateSchema,
+  orderCancelByMasterSchema,
   orderCompleteSchema,
+  verificationRequestSubmitSchema,
 } from '@handly/contracts';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { ZodValidationPipe } from '../../common/http/zod-validation.pipe';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { DispatchService } from '../dispatch/dispatch.service';
 import { OrdersService } from '../orders/orders.service';
 import { PaymentsService } from '../payments/payments.service';
+import { PenaltiesService } from '../penalties/penalties.service';
+import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { TrustService } from '../trust/trust.service';
+import { VerificationService } from '../verification/verification.service';
 import { UsersService } from './users.service';
 
 const mediaSchema = z.object({
@@ -40,6 +47,11 @@ export class MasterController {
     private readonly dispatch: DispatchService,
     private readonly orders: OrdersService,
     private readonly payments: PaymentsService,
+    private readonly trust: TrustService,
+    private readonly verification: VerificationService,
+    private readonly penalties: PenaltiesService,
+    private readonly subscriptions: SubscriptionsService,
+    private readonly analytics: AnalyticsService,
   ) {}
 
   @Get()
@@ -141,6 +153,17 @@ export class MasterController {
     return this.orders.addJobMedia(userId, id, { buffer, mime: mp.mimetype });
   }
 
+  /** Master backs out of an ASSIGNED/EN_ROUTE job (Batch 2) — always penalized. */
+  @Post('current-job/:id/cancel')
+  @HttpCode(200)
+  cancelJob(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(orderCancelByMasterSchema)) dto: ReturnType<typeof orderCancelByMasterSchema.parse>,
+  ) {
+    return this.orders.cancelByMaster(userId, id, dto.reason);
+  }
+
   @Get('jobs')
   getJobHistory(@CurrentUser('id') userId: string, @Query('cursor') cursor?: string) {
     return this.orders.getJobHistory(userId, cursor || undefined);
@@ -151,5 +174,56 @@ export class MasterController {
   @Get('earnings')
   getEarnings(@CurrentUser('id') userId: string, @Query('cursor') cursor?: string) {
     return this.payments.getMasterEarnings(userId, cursor || undefined);
+  }
+
+  // ─────────────── Trust (Batch 2) ───────────────
+
+  @Get('trust')
+  getTrust(@CurrentUser('id') userId: string) {
+    return this.trust.recomputeTrustTier(userId);
+  }
+
+  // ─────────────── Verification (Batch 2) ───────────────
+
+  @Post('verification')
+  @HttpCode(201)
+  submitVerification(
+    @CurrentUser('id') userId: string,
+    @Body(new ZodValidationPipe(verificationRequestSubmitSchema))
+    dto: ReturnType<typeof verificationRequestSubmitSchema.parse>,
+  ) {
+    return this.verification.submit(userId, dto.note);
+  }
+
+  @Get('verification')
+  getVerification(@CurrentUser('id') userId: string) {
+    return this.verification.getMyLatest(userId);
+  }
+
+  // ─────────────── Penalties (Batch 2) ───────────────
+
+  @Get('penalties')
+  getPenalties(@CurrentUser('id') userId: string) {
+    return this.penalties.getHistory(userId);
+  }
+
+  // ─────────────── Subscription (Batch 2) ───────────────
+
+  @Get('subscription')
+  getSubscription(@CurrentUser('id') userId: string) {
+    return this.subscriptions.getStatus(userId);
+  }
+
+  @Post('subscription/upgrade')
+  @HttpCode(200)
+  upgradeSubscription(@CurrentUser('id') userId: string) {
+    return this.subscriptions.upgradeToPremium(userId);
+  }
+
+  // ─────────────── Analytics (Batch 2) ───────────────
+
+  @Get('analytics')
+  getAnalytics(@CurrentUser('id') userId: string) {
+    return this.analytics.getForMaster(userId);
   }
 }

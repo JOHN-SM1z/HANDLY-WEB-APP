@@ -23,7 +23,17 @@ export interface ScoringInput {
   distanceM: number;
   ratingAvg: number;
   jobsDone: number;
+  /** Active Premium subscription (Batch 2) — see PREMIUM_SCORE_BONUS below. */
+  isPremium?: boolean;
 }
+
+/**
+ * Flat bonus added to a Premium master's score — "higher visibility, priority
+ * ranking" per the Batch 2 subscription spec. A flat additive bonus (not a
+ * separate Premium-first cascade round) keeps the existing single-pass
+ * scoring/weighted-random-pick logic unchanged; it just nudges the odds.
+ */
+export const PREMIUM_SCORE_BONUS = 0.1;
 
 /**
  * Distance is normalized against a fixed reference, not each candidate's own
@@ -38,14 +48,16 @@ const SCORE_DISTANCE_REFERENCE_M = 20_000;
 /**
  * Weighted(distance, rating, completed jobs) per §9.2.2 — response-rate and
  * AI-match-confidence factors are dropped for M3 (no data source exists yet
- * for either); Premium boost is dropped (no subscriptions yet). Distance
- * dominates, matching "select randomly the closest master."
+ * for either). Distance dominates, matching "select randomly the closest
+ * master." Premium subscribers (Batch 2) get a flat additive bonus on top —
+ * "higher visibility/priority ranking" without overriding distance/quality.
  */
-export function scoreCandidate({ distanceM, ratingAvg, jobsDone }: ScoringInput): number {
+export function scoreCandidate({ distanceM, ratingAvg, jobsDone, isPremium }: ScoringInput): number {
   const distanceScore = clamp01(1 - distanceM / SCORE_DISTANCE_REFERENCE_M);
   const ratingScore = clamp01(ratingAvg / 5);
   const jobsScore = clamp01(jobsDone / 100); // saturates at 100 jobs
-  return 0.5 * distanceScore + 0.35 * ratingScore + 0.15 * jobsScore;
+  const base = 0.5 * distanceScore + 0.35 * ratingScore + 0.15 * jobsScore;
+  return isPremium ? base + PREMIUM_SCORE_BONUS : base;
 }
 
 function clamp01(n: number): number {

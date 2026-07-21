@@ -21,6 +21,7 @@ const prisma = new PrismaService();
 const config = new AppConfig(loadEnv());
 const tax = new MockTaxProvider(config);
 const stubNotifications = { notify: async () => {} };
+const stubReferrals = { rewardOnFirstPayment: async () => {} };
 
 const alwaysFailProvider: PaymentProvider = {
   async charge(input: ChargeInput): Promise<ChargeResult> {
@@ -28,8 +29,8 @@ const alwaysFailProvider: PaymentProvider = {
   },
 };
 
-const payments = new PaymentsService(prisma, new MockPaymentProvider(), tax, stubNotifications as never);
-const failingPayments = new PaymentsService(prisma, alwaysFailProvider, tax, stubNotifications as never);
+const payments = new PaymentsService(prisma, new MockPaymentProvider(), tax, stubNotifications as never, stubReferrals as never);
+const failingPayments = new PaymentsService(prisma, alwaysFailProvider, tax, stubNotifications as never, stubReferrals as never);
 
 let categoryId: string;
 let customerId: string;

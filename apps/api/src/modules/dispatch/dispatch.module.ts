@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PenaltiesModule } from '../penalties/penalties.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { DispatchService } from './dispatch.service';
 import { DispatchWorker } from './dispatch.worker';
 
 @Module({
-  imports: [NotificationsModule, RealtimeModule],
+  imports: [NotificationsModule, RealtimeModule, PenaltiesModule],
   providers: [DispatchService, DispatchWorker],
   exports: [DispatchService],
 })

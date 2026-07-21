@@ -10,6 +10,7 @@ import { PrismaService } from '../../infra/prisma/prisma.service';
 import { PAYMENT_PROVIDER, type PaymentProvider } from '../../infra/payment/payment-provider';
 import { TAX_PROVIDER, type TaxProvider } from '../tax/tax-provider';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ReferralsService } from '../referrals/referrals.service';
 
 /** Statuses that mean "there's already an active/settled payment for this order". */
 const ACTIVE_PAYMENT_STATUSES = ['PENDING', 'PROCESSING', 'SUCCEEDED'] as const;
@@ -21,6 +22,7 @@ export class PaymentsService {
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
     @Inject(TAX_PROVIDER) private readonly tax: TaxProvider,
     private readonly notifications: NotificationsService,
+    private readonly referrals: ReferralsService,
   ) {}
 
   /**
@@ -122,6 +124,22 @@ export class PaymentsService {
         "To'lovingiz qabul qilindi. Rahmat!",
         { orderId: payment.orderId, paymentId: payment.id },
       );
+      // Batch 2 growth foundation: this customer's first successful payment
+      // rewards whoever referred them, if anyone did (no-op otherwise).
+      // ReferralsService has no NotificationsModule dependency of its own
+      // (see its rewardOnFirstPayment doc comment — that dependency direction
+      // would recreate a circular module import), so PaymentsService sends
+      // the reward notification here using the referrerId it returns.
+      const referrerId = await this.referrals.rewardOnFirstPayment(payment.customerId);
+      if (referrerId) {
+        await this.notifications.notify(
+          referrerId,
+          'REFERRAL_REWARDED',
+          'Referal mukofoti',
+          "Do'stingiz birinchi to'lovni amalga oshirdi — sizga cashback berildi!",
+          { customerId: payment.customerId },
+        );
+      }
     } else {
       await this.notifications.notify(
         payment.customerId,
