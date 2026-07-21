@@ -13,7 +13,10 @@ Handly is a **managed marketplace for home services in Uzbekistan** (plumber, el
 - **Pre-M4 cross-cutting architecture review (security, scalability, API/test/docs, frontend quality): DONE (2026-07-21).** Whole-codebase pass, not a numbered milestone — see "What the pre-M4 architecture review shipped" below.
 - **Milestone 4 (Job execution — EN_ROUTE/IN_PROGRESS/COMPLETED/CLOSED, completion evidence): DONE & verified (2026-07-21).**
 - **Milestone 5 (Payments & financial system — mock provider, settlement, earnings): DONE & verified (2026-07-21).**
-- Batch 1 (M4+M5) complete — waiting on founder approval before Batch 2 (**Milestone 6 + Milestone 7**).
+- **Batch 1 (M4 Job execution + M5 Payments) complete.** Waiting on founder approval before Batch 2. **The batch roadmap below is the corrected, definitive numbering — do not reinterpret milestone/batch numbers from `docs/ARCHITECTURE.md`'s original (pre-Batch-1) roadmap table, which described different scope under those same numbers.**
+  - **Batch 2 — Trust, Safety & Marketplace Growth:** trust tiers, verification improvements, penalty engine, Handly Guarantee, cashback, referrals, master subscriptions, master analytics.
+  - **Batch 3 — Operations & Scale:** admin dashboard, analytics, support tools, performance optimization, beta preparation.
+  - **Batch 4 — Launch Readiness:** infrastructure, monitoring, CI/CD, backups, security hardening, production deployment.
 
 ## Monorepo layout (pnpm workspaces + Turborepo)
 
