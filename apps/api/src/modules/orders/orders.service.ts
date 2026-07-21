@@ -27,7 +27,9 @@ import { STORAGE_PROVIDER, type StorageProvider } from '../../infra/storage/stor
 import { AiService } from '../ai/ai.service';
 import type { DiagnoseImage } from '../ai/ai-provider';
 import { DispatchService } from '../dispatch/dispatch.service';
-import { canTransition, EDITABLE_STATUSES } from './order-state';
+import { NotificationsService } from '../notifications/notifications.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { ACTIVE_MASTER_JOB_STATUSES, canTransition, EDITABLE_STATUSES } from './order-state';
 import { computeQuote } from './pricing';
 
 const PHOTO_MIMES: Record<string, string> = {
@@ -70,6 +72,8 @@ export class OrdersService {
     private readonly config: AppConfig,
     private readonly ai: AiService,
     private readonly dispatch: DispatchService,
+    private readonly realtime: RealtimeGateway,
+    private readonly notifications: NotificationsService,
     @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
@@ -146,6 +150,29 @@ export class OrdersService {
     if (!EDITABLE_STATUSES.includes(order.status as OrderStatus)) {
       throw new ConflictException("Yuborilgan buyurtmaga media qo'shib bo'lmaydi");
     }
+    await this.saveMediaFile(order, file, 'CUSTOMER');
+    return this.toDto(await this.getOwned(customerId, orderId));
+  }
+
+  /** Master-uploaded job-completion evidence (M4) — same table, tagged by role. */
+  async addJobMedia(
+    masterId: string,
+    orderId: string,
+    file: { buffer: Buffer; mime: string },
+  ): Promise<OrderDto> {
+    const order = await this.getOwnedByMaster(masterId, orderId);
+    if (order.status !== OrderStatus.IN_PROGRESS && order.status !== OrderStatus.COMPLETED) {
+      throw new ConflictException("Bu holatda dalil-rasm qo'shib bo'lmaydi");
+    }
+    await this.saveMediaFile(order, file, 'MASTER');
+    return this.toDto(await this.getOwnedByMaster(masterId, orderId));
+  }
+
+  private async saveMediaFile(
+    order: OrderWithRelations,
+    file: { buffer: Buffer; mime: string },
+    uploadedByRole: 'CUSTOMER' | 'MASTER',
+  ): Promise<void> {
     if (order.media.length >= this.config.env.ORDER_MAX_MEDIA) {
       throw new BadRequestException(`Ko'pi bilan ${this.config.env.ORDER_MAX_MEDIA} ta fayl yuklash mumkin`);
     }
@@ -167,14 +194,14 @@ export class OrdersService {
 
     await this.prisma.orderMedia.create({
       data: {
-        orderId,
+        orderId: order.id,
         kind: isPhoto ? 'PHOTO' : 'VIDEO',
+        uploadedByRole,
         objectKey,
         mime: file.mime,
         sizeBytes: file.buffer.length,
       },
     });
-    return this.toDto(await this.getOwned(customerId, orderId));
   }
 
   async deleteMedia(customerId: string, orderId: string, mediaId: string): Promise<OrderDto> {
@@ -326,6 +353,125 @@ export class OrdersService {
     return this.toDto(updated);
   }
 
+  // ─────────────── Job execution (M4) ───────────────
+
+  /** Master heads to the job site. */
+  async startEnRoute(masterId: string, orderId: string): Promise<OrderDto> {
+    const order = await this.getOwnedByMaster(masterId, orderId);
+    if (!canTransition(order.status as OrderStatus, OrderStatus.EN_ROUTE)) {
+      throw new ConflictException("Bu holatda yo'lga chiqib bo'lmaydi");
+    }
+    const updated = await this.transitionByMaster(order, OrderStatus.EN_ROUTE, masterId);
+    return this.toDto(updated);
+  }
+
+  /** Master starts the actual work at the customer's location. */
+  async startService(masterId: string, orderId: string): Promise<OrderDto> {
+    const order = await this.getOwnedByMaster(masterId, orderId);
+    if (!canTransition(order.status as OrderStatus, OrderStatus.IN_PROGRESS)) {
+      throw new ConflictException("Bu holatda ishni boshlab bo'lmaydi");
+    }
+    const updated = await this.transitionByMaster(order, OrderStatus.IN_PROGRESS, masterId);
+    return this.toDto(updated);
+  }
+
+  /** Master marks the job done, recording the actual agreed price (within the quoted range). */
+  async completeService(masterId: string, orderId: string, finalAmount: number): Promise<OrderDto> {
+    const order = await this.getOwnedByMaster(masterId, orderId);
+    if (!canTransition(order.status as OrderStatus, OrderStatus.COMPLETED)) {
+      throw new ConflictException("Bu holatda ishni tugallab bo'lmaydi");
+    }
+    if (order.priceMin != null && order.priceMax != null) {
+      if (finalAmount < order.priceMin || finalAmount > order.priceMax) {
+        throw new BadRequestException(
+          `Yakuniy narx ${order.priceMin}–${order.priceMax} so'm oralig'ida bo'lishi kerak`,
+        );
+      }
+    }
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // Guarded on order.status so a double-tap "complete" can't both write
+      // (see transitionByMaster's doc comment for why this pattern, not FOR UPDATE).
+      const result = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: { status: OrderStatus.COMPLETED, finalAmount },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException("Bu holatda ishni tugallab bo'lmaydi");
+      }
+      await tx.orderStatusHistory.create({
+        data: { orderId, fromStatus: order.status, toStatus: OrderStatus.COMPLETED, actorId: masterId },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: FULL_INCLUDE });
+    });
+    this.realtime.emitToUser(order.customerId, 'order:updated', {
+      orderId,
+      status: OrderStatus.COMPLETED,
+    });
+    await this.notifications.notify(
+      order.customerId,
+      'ORDER_COMPLETED',
+      'Ish tugallandi',
+      "Usta ishni tugallandi deb belgiladi. To'lov va tasdiqlash uchun buyurtmani ko'ring.",
+      { orderId },
+    );
+    return this.toDto(updated);
+  }
+
+  /**
+   * Customer confirms the completed job — the one transition into CLOSED.
+   * Increments the master's jobsDone here (not at COMPLETED) since this is
+   * the customer-confirmed signal, not just the master's own self-report.
+   */
+  async confirmCompletion(customerId: string, orderId: string): Promise<OrderDto> {
+    const order = await this.getOwned(customerId, orderId);
+    if (!canTransition(order.status as OrderStatus, OrderStatus.CLOSED)) {
+      throw new ConflictException("Bu buyurtmani hali tasdiqlab bo'lmaydi");
+    }
+    if (!order.masterId) throw new ConflictException('Buyurtmaga usta tayinlanmagan');
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: { status: OrderStatus.CLOSED },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException("Bu buyurtmani hali tasdiqlab bo'lmaydi");
+      }
+      await tx.orderStatusHistory.create({
+        data: { orderId, fromStatus: order.status, toStatus: OrderStatus.CLOSED, actorId: customerId },
+      });
+      await tx.masterProfile.update({
+        where: { userId: order.masterId! },
+        data: { jobsDone: { increment: 1 } },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: FULL_INCLUDE });
+    });
+
+    this.realtime.emitToUser(order.masterId, 'order:updated', { orderId, status: OrderStatus.CLOSED });
+    await this.notifications.notify(
+      order.masterId,
+      'ORDER_CLOSED',
+      'Mijoz tasdiqladi',
+      'Mijoz ishni qabul qildi va yopdi.',
+      { orderId },
+    );
+    return this.toDto(updated);
+  }
+
+  /** Master's own resolved (completed/closed) jobs, newest first (M4 job history). */
+  async getJobHistory(masterId: string, cursor?: string): Promise<OrderListPage> {
+    const take = 20;
+    const rows = await this.prisma.order.findMany({
+      where: { masterId, status: { in: [OrderStatus.COMPLETED, OrderStatus.CLOSED] } },
+      orderBy: { createdAt: 'desc' },
+      take: take + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      include: FULL_INCLUDE,
+    });
+    const items = rows.slice(0, take).map((r) => this.toDto(r));
+    return { items, nextCursor: rows.length > take ? rows[take]!.id : null };
+  }
+
   // ─────────────── Read ───────────────
 
   async list(customerId: string, cursor?: string, status?: OrderStatus): Promise<OrderListPage> {
@@ -345,10 +491,10 @@ export class OrdersService {
     return this.toDto(await this.getOwned(customerId, orderId));
   }
 
-  /** The one order currently assigned to this master, if any (M3). */
+  /** The one order currently on this master's plate, through its whole active lifecycle (M3+M4). */
   async getCurrentJob(masterId: string): Promise<OrderDto | null> {
     const order = await this.prisma.order.findFirst({
-      where: { masterId, status: OrderStatus.ASSIGNED },
+      where: { masterId, status: { in: ACTIVE_MASTER_JOB_STATUSES as OrderStatus[] } },
       include: FULL_INCLUDE,
     });
     return order ? this.toDto(order) : null;
@@ -364,6 +510,48 @@ export class OrdersService {
     if (!order) throw new NotFoundException('Buyurtma topilmadi');
     if (order.customerId !== customerId) throw new ForbiddenException("Ruxsat yo'q");
     return order;
+  }
+
+  private async getOwnedByMaster(masterId: string, orderId: string): Promise<OrderWithRelations> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: FULL_INCLUDE,
+    });
+    if (!order) throw new NotFoundException('Buyurtma topilmadi');
+    if (order.masterId !== masterId) throw new ForbiddenException("Ruxsat yo'q");
+    return order;
+  }
+
+  /**
+   * Guarded transition: the update is conditioned on the order still being in
+   * `order.status` (the value we read it at), so two concurrent calls (e.g. a
+   * double-tap on "en route"/"start") can't both succeed and both write a
+   * statusHistory row — the second sees `count === 0` and is rejected as a
+   * conflict, same class of fix as the accept-race lock (M3) and refresh-token
+   * rotation race (pre-M4 audit), just via a guarded update instead of
+   * `SELECT ... FOR UPDATE` since there's only ever one legitimate writer
+   * (the assigned master) racing against their own duplicate request.
+   */
+  private async transitionByMaster(
+    order: OrderWithRelations,
+    toStatus: OrderStatus,
+    masterId: string,
+  ): Promise<OrderWithRelations> {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({
+        where: { id: order.id, status: order.status },
+        data: { status: toStatus },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException("Bu holatda amalni bajarib bo'lmaydi");
+      }
+      await tx.orderStatusHistory.create({
+        data: { orderId: order.id, fromStatus: order.status, toStatus, actorId: masterId },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: order.id }, include: FULL_INCLUDE });
+    });
+    this.realtime.emitToUser(order.customerId, 'order:updated', { orderId: order.id, status: toStatus });
+    return updated;
   }
 
   private async assertCategory(categoryId: string): Promise<void> {
@@ -422,9 +610,11 @@ export class OrdersService {
       priceMin: order.priceMin,
       priceMax: order.priceMax,
       platformFee: order.platformFee,
+      finalAmount: order.finalAmount,
       media: order.media.map((m) => ({
         id: m.id,
         kind: m.kind as 'PHOTO' | 'VIDEO',
+        uploadedByRole: m.uploadedByRole as 'CUSTOMER' | 'MASTER',
         url: `/api/v1/media/${m.id}`,
         mime: m.mime,
         sizeBytes: m.sizeBytes,

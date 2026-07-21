@@ -106,6 +106,14 @@ enum OrderMediaKind {
   VIDEO
 }
 
+// Who attached the file — the customer's initial problem photos/videos vs.
+// the master's job-completion evidence (M4). Same table/model either way;
+// this discriminator is all that's needed to tell them apart for display.
+enum OrderMediaUploader {
+  CUSTOMER
+  MASTER
+}
+
 // ─────────────────────────── Dispatch (M3) ───────────────────────────
 enum DispatchStatus {
   OFFERED
@@ -120,6 +128,12 @@ enum NotificationType {
   OFFER_EXPIRED
   ORDER_ASSIGNED
   ORDER_SEARCH_FAILED
+  // M4 — job execution
+  ORDER_COMPLETED
+  ORDER_CLOSED
+  // M5 — payments
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
 }
 
 // ─────────────────────────── Identity ───────────────────────────
@@ -141,6 +155,7 @@ model User {
   addresses       Address[]
   orders          Order[]
   notifications   Notification[]
+  payments        Payment[]
 
   @@map("users")
 }
@@ -373,6 +388,9 @@ model Order {
   priceMin    Int?
   priceMax    Int?
   platformFee Int             @default(0)
+  // Set by the master at job completion (M4) — the actual agreed price,
+  // within [priceMin, priceMax]. This is what a Payment (M5) charges.
+  finalAmount Int?
   // Lifecycle timestamps
   consentAcceptedAt DateTime?
   submittedAt DateTime?
@@ -383,6 +401,7 @@ model Order {
   media         OrderMedia[]
   statusHistory OrderStatusHistory[]
   dispatches    OrderDispatch[]
+  payments      Payment[]
 
   @@index([customerId, createdAt])
   @@index([status])
@@ -394,14 +413,15 @@ model Order {
 }
 
 model OrderMedia {
-  id        String         @id @default(uuid()) @db.Uuid
-  orderId   String         @db.Uuid
-  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  kind      OrderMediaKind
-  objectKey String
-  mime      String
-  sizeBytes Int
-  createdAt DateTime       @default(now())
+  id             String             @id @default(uuid()) @db.Uuid
+  orderId        String             @db.Uuid
+  order          Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind           OrderMediaKind
+  uploadedByRole OrderMediaUploader @default(CUSTOMER)
+  objectKey      String
+  mime           String
+  sizeBytes      Int
+  createdAt      DateTime           @default(now())
 
   @@index([orderId])
   @@map("order_media")
@@ -419,6 +439,61 @@ model OrderStatusHistory {
 
   @@index([orderId, createdAt])
   @@map("order_status_history")
+}
+
+// ─────────────────────────── Payments (M5) ───────────────────────────
+// One customer-facing payment attempt per row. A retried/failed attempt
+// creates a new row rather than mutating the failed one — the audit trail
+// (and any provider webhook replay) stays intact. Only one SUCCEEDED
+// payment may ever exist per order; enforced in PaymentsService via a
+// FOR UPDATE transaction on the order row (see acceptOffer/consumeSession
+// for the identical pattern), not a DB constraint, since "at most one
+// success" isn't expressible as a plain unique index here.
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+// Which rail the customer picked. Only MOCK is wired to a real provider
+// today (PAYMENT_PROVIDER env) — CLICK/PAYME/UZUM are modeled so the
+// selection UI and data are provider-aware ahead of real credentials.
+enum PaymentMethod {
+  CLICK
+  PAYME
+  UZUM
+  MOCK
+}
+
+model Payment {
+  id         String        @id @default(uuid()) @db.Uuid
+  orderId    String        @db.Uuid
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId String        @db.Uuid
+  customer   User          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  method     PaymentMethod
+  status     PaymentStatus @default(PENDING)
+  // Integer so'm throughout — never floats (project convention).
+  amount        Int
+  platformFee   Int
+  taxRate       Decimal   @db.Decimal(5, 4)
+  taxAmount     Int
+  masterNetAmount Int
+  taxWithholdingRef String?
+  // External provider's own transaction id — unique so a replayed webhook
+  // for the same transaction is a no-op, not a double-settle.
+  providerRef   String?   @unique
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  succeededAt   DateTime?
+  failedAt      DateTime?
+
+  @@index([orderId])
+  @@index([customerId, createdAt])
+  @@map("payments")
 }
 
 // ─────────────────────────── Dispatch (M3) ───────────────────────────

@@ -85,13 +85,29 @@ export default function ProfilePage() {
         </Link>
 
         {user.role === 'MASTER' && (
-          <Link
-            href="/master"
-            className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
-          >
-            <span className="flex-1 text-sm font-medium text-content-primary">Usta paneli</span>
-            <ChevronRightIcon width={16} height={16} className="text-content-muted" />
-          </Link>
+          <>
+            <Link
+              href="/master"
+              className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
+            >
+              <span className="flex-1 text-sm font-medium text-content-primary">Usta paneli</span>
+              <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+            </Link>
+            <Link
+              href="/master/jobs"
+              className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
+            >
+              <span className="flex-1 text-sm font-medium text-content-primary">Ish tarixi</span>
+              <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+            </Link>
+            <Link
+              href="/master/earnings"
+              className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
+            >
+              <span className="flex-1 text-sm font-medium text-content-primary">Daromad</span>
+              <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+            </Link>
+          </>
         )}
 
         {me?.referralCode && (

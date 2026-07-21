@@ -74,7 +74,8 @@ export async function findEligibleCandidates(
         )
         AND NOT EXISTS (
           SELECT 1 FROM orders busy
-          WHERE busy."masterId" = mp."userId" AND busy.status = 'ASSIGNED'
+          WHERE busy."masterId" = mp."userId"
+            AND busy.status IN ('ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS', 'COMPLETED')
         )
         AND NOT EXISTS (
           SELECT 1 FROM availability_slots av

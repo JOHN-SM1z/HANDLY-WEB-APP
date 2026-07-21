@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OfferDto } from '@handly/contracts';
 import { BookingRequestCard } from '@/components/master/booking-request-card';
@@ -9,9 +9,11 @@ import { OnlineToggle } from '@/components/master/online-toggle';
 import { RouteTimeline, type TimelineItem } from '@/components/master/route-timeline';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CheckIcon, DropletIcon, PhoneIcon } from '@/components/ui/icons';
+import { CameraIcon, CheckIcon, DropletIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { Rating } from '@/components/ui/badge';
+import { TextField } from '@/components/ui/text-field';
+import { ApiError } from '@/lib/api';
 import { formatSom } from '@/lib/format';
 import { masterApi } from '@/lib/master';
 import { useSocketEvent } from '@/lib/socket';
@@ -61,6 +63,13 @@ const NAV_ITEMS = [
   },
 ];
 
+const JOB_STATUS_META: Record<string, string> = {
+  ASSIGNED: 'Tayinlandi',
+  EN_ROUTE: "Yo'lda",
+  IN_PROGRESS: 'Bajarilmoqda',
+  COMPLETED: 'Mijoz tasdiqlashini kutmoqda',
+};
+
 function initialsOf(fullName: string | null, phone: string): string {
   if (fullName) {
     const parts = fullName.trim().split(/\s+/);
@@ -80,6 +89,10 @@ export default function MasterDashboardPage() {
   const { ready, user } = useRequireAuth();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [showCompleteForm, setShowCompleteForm] = useState(false);
+  const [finalAmount, setFinalAmount] = useState('');
+  const [jobError, setJobError] = useState<string | null>(null);
+  const evidenceInputRef = useRef<HTMLInputElement>(null);
 
   const {
     data: profile,
@@ -130,6 +143,35 @@ export default function MasterDashboardPage() {
     onSuccess: () => queryClient.setQueryData(['master', 'offer'], null),
   });
 
+  const invalidateCurrentJob = () => queryClient.invalidateQueries({ queryKey: ['master', 'current-job'] });
+
+  const startEnRoute = useMutation({
+    mutationFn: (orderId: string) => masterApi.startEnRoute(orderId),
+    onSuccess: () => void invalidateCurrentJob(),
+    onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi'),
+  });
+  const startService = useMutation({
+    mutationFn: (orderId: string) => masterApi.startService(orderId),
+    onSuccess: () => void invalidateCurrentJob(),
+    onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi'),
+  });
+  const completeService = useMutation({
+    mutationFn: ({ orderId, amount }: { orderId: string; amount: number }) =>
+      masterApi.completeService(orderId, amount),
+    onSuccess: () => {
+      setShowCompleteForm(false);
+      setFinalAmount('');
+      void invalidateCurrentJob();
+    },
+    onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi'),
+  });
+  const uploadEvidence = useMutation({
+    mutationFn: ({ orderId, file }: { orderId: string; file: File }) =>
+      masterApi.uploadJobMedia(orderId, file),
+    onSuccess: () => void invalidateCurrentJob(),
+    onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Yuklashda xatolik'),
+  });
+
   useEffect(() => {
     if (!offer) {
       setCountdown(null);
@@ -140,6 +182,12 @@ export default function MasterDashboardPage() {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [offer]);
+
+  useEffect(() => {
+    setShowCompleteForm(false);
+    setFinalAmount('');
+    setJobError(null);
+  }, [currentJob?.id]);
 
   if (ready && user && profileError) {
     return (
@@ -162,28 +210,118 @@ export default function MasterDashboardPage() {
     );
   }
 
-  const currentJobActions = (
-    <div className="mt-2.5 flex gap-2">
-      {/* Presentational placeholder — job execution/completion is M4 (see CLAUDE.md). Real
-          <button disabled> so it's honestly non-interactive to keyboard/screen readers too,
-          not just visually — a styled span that looks clickable but does nothing is worse. */}
-      <button
-        type="button"
-        disabled
-        aria-label="Bajarildi deb belgilash (hali mavjud emas)"
-        className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-sm bg-ink text-xs font-semibold text-ink-fg disabled:opacity-100"
-      >
-        <CheckIcon width={13} height={13} strokeWidth={2.4} />
-        Bajarildi deb belgilash
-      </button>
-      <button
-        type="button"
-        disabled
-        aria-label="Ustaga qo'ng'iroq qilish (hali mavjud emas)"
-        className="flex h-9 w-9 items-center justify-center rounded-sm border border-border-primary text-content-secondary disabled:opacity-100"
-      >
-        <PhoneIcon width={15} height={15} />
-      </button>
+  const evidenceMedia = currentJob?.media.filter((m) => m.uploadedByRole === 'MASTER') ?? [];
+
+  const currentJobActions = currentJob && (
+    <div className="mt-2.5 flex flex-col gap-2">
+      {jobError && <Alert>{jobError}</Alert>}
+
+      {evidenceMedia.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {evidenceMedia.map((m) =>
+            m.kind === 'PHOTO' ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={m.id} src={m.url} alt="" className="h-12 w-12 rounded-md border border-border-secondary object-cover" />
+            ) : (
+              <a
+                key={m.id}
+                href={m.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-12 w-12 items-center justify-center rounded-md border border-border-secondary bg-background-secondary text-[9px] text-content-muted"
+              >
+                Video
+              </a>
+            ),
+          )}
+        </div>
+      )}
+
+      {currentJob.status === 'ASSIGNED' && (
+        <Button
+          size="sm"
+          fullWidth
+          loading={startEnRoute.isPending}
+          onClick={() => {
+            setJobError(null);
+            startEnRoute.mutate(currentJob.id);
+          }}
+        >
+          Yo&apos;lga chiqish
+        </Button>
+      )}
+
+      {currentJob.status === 'EN_ROUTE' && (
+        <Button
+          size="sm"
+          fullWidth
+          loading={startService.isPending}
+          onClick={() => {
+            setJobError(null);
+            startService.mutate(currentJob.id);
+          }}
+        >
+          Ishni boshlash
+        </Button>
+      )}
+
+      {(currentJob.status === 'IN_PROGRESS' || currentJob.status === 'COMPLETED') && (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => evidenceInputRef.current?.click()}
+            aria-label="Dalil-rasm yuklash"
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-sm border border-border-primary text-content-secondary"
+          >
+            <CameraIcon width={15} height={15} />
+          </button>
+          {currentJob.status === 'IN_PROGRESS' && !showCompleteForm && (
+            <Button size="sm" fullWidth onClick={() => setShowCompleteForm(true)}>
+              <CheckIcon width={13} height={13} strokeWidth={2.4} />
+              Bajarildi deb belgilash
+            </Button>
+          )}
+          {currentJob.status === 'COMPLETED' && (
+            <span className="flex flex-1 items-center justify-center rounded-sm bg-background-secondary text-xs font-medium text-content-secondary">
+              Tasdiqlashni kutmoqda…
+            </span>
+          )}
+        </div>
+      )}
+
+      {currentJob.status === 'IN_PROGRESS' && showCompleteForm && (
+        <div className="flex flex-col gap-2 rounded-md border border-border-tertiary bg-background-secondary p-2.5">
+          <TextField
+            type="number"
+            inputMode="numeric"
+            label="Yakuniy narx (so'm)"
+            placeholder={
+              currentJob.priceMin != null && currentJob.priceMax != null
+                ? `${currentJob.priceMin}–${currentJob.priceMax}`
+                : undefined
+            }
+            value={finalAmount}
+            onChange={(e) => setFinalAmount(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowCompleteForm(false)}>
+              Bekor qilish
+            </Button>
+            <Button
+              size="sm"
+              className="flex-1"
+              loading={completeService.isPending}
+              disabled={!finalAmount || Number(finalAmount) <= 0}
+              onClick={() => {
+                setJobError(null);
+                completeService.mutate({ orderId: currentJob.id, amount: Math.round(Number(finalAmount)) });
+              }}
+            >
+              Tasdiqlash
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -193,7 +331,7 @@ export default function MasterDashboardPage() {
           id: currentJob.id,
           title: `${currentJob.categoryName ?? 'Buyurtma'} — ${currentJob.addressText ?? ''}`,
           time: 'hozir',
-          meta: `Tayinlangan · taxminiy ${currentJob.priceMin != null && currentJob.priceMax != null ? `${formatSom(currentJob.priceMin)}–${formatSom(currentJob.priceMax)}` : "narx yo'q"}`,
+          meta: `${JOB_STATUS_META[currentJob.status] ?? currentJob.status} · taxminiy ${currentJob.priceMin != null && currentJob.priceMax != null ? `${formatSom(currentJob.priceMin)}–${formatSom(currentJob.priceMax)}` : "narx yo'q"}`,
           status: 'active',
           actions: currentJobActions,
         },
@@ -264,6 +402,14 @@ export default function MasterDashboardPage() {
         <div>
           <div className="mb-3 flex items-baseline justify-between">
             <span className="text-lg font-bold tracking-tight">Joriy ish</span>
+            <div className="flex gap-3">
+              <Link href="/master/earnings" className="text-xs font-medium text-primary">
+                Daromad
+              </Link>
+              <Link href="/master/jobs" className="text-xs font-medium text-primary">
+                Ish tarixi
+              </Link>
+            </div>
           </div>
           {routeItems.length > 0 ? (
             <RouteTimeline items={routeItems} />
@@ -272,6 +418,21 @@ export default function MasterDashboardPage() {
               Hozircha tayinlangan ish yo&apos;q.
             </div>
           )}
+          <input
+            ref={evidenceInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file && currentJob) {
+                setJobError(null);
+                uploadEvidence.mutate({ orderId: currentJob.id, file });
+              }
+            }}
+          />
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { OrderStatus } from '@handly/contracts';
-import { canTransition, EDITABLE_STATUSES } from '../src/modules/orders/order-state';
+import { ACTIVE_MASTER_JOB_STATUSES, canTransition, EDITABLE_STATUSES } from '../src/modules/orders/order-state';
 
 test('DRAFT -> PRICED -> SEARCHING is the happy path', () => {
   assert.equal(canTransition(OrderStatus.DRAFT, OrderStatus.PRICED), true);
@@ -64,4 +64,56 @@ test('EXPIRED is terminal via this table (no further transitions modeled yet)', 
 
 test('ASSIGNED is not editable (only DRAFT/PRICED are)', () => {
   assert.ok(!EDITABLE_STATUSES.includes(OrderStatus.ASSIGNED));
+});
+
+// ─────────────── M4: job-execution extensions ───────────────
+
+test('the full job-execution happy path: ASSIGNED -> EN_ROUTE -> IN_PROGRESS -> COMPLETED -> CLOSED', () => {
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.EN_ROUTE), true);
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.IN_PROGRESS), true);
+  assert.equal(canTransition(OrderStatus.IN_PROGRESS, OrderStatus.COMPLETED), true);
+  assert.equal(canTransition(OrderStatus.COMPLETED, OrderStatus.CLOSED), true);
+});
+
+test('cancellation is still allowed from EN_ROUTE but not once IN_PROGRESS', () => {
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.CANCELLED_BY_CUSTOMER), true);
+  assert.equal(canTransition(OrderStatus.IN_PROGRESS, OrderStatus.CANCELLED_BY_CUSTOMER), false);
+});
+
+test('no state can be skipped in the execution flow', () => {
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.IN_PROGRESS), false);
+  assert.equal(canTransition(OrderStatus.ASSIGNED, OrderStatus.COMPLETED), false);
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.COMPLETED), false);
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.CLOSED), false);
+  assert.equal(canTransition(OrderStatus.IN_PROGRESS, OrderStatus.CLOSED), false);
+});
+
+test('no step in the execution flow can be repeated or reversed', () => {
+  assert.equal(canTransition(OrderStatus.EN_ROUTE, OrderStatus.ASSIGNED), false);
+  assert.equal(canTransition(OrderStatus.IN_PROGRESS, OrderStatus.EN_ROUTE), false);
+  assert.equal(canTransition(OrderStatus.COMPLETED, OrderStatus.IN_PROGRESS), false);
+  assert.equal(canTransition(OrderStatus.IN_PROGRESS, OrderStatus.IN_PROGRESS), false);
+});
+
+test('CLOSED is terminal — no further transitions modeled', () => {
+  assert.equal(canTransition(OrderStatus.CLOSED, OrderStatus.COMPLETED), false);
+  assert.equal(canTransition(OrderStatus.CLOSED, OrderStatus.CANCELLED_BY_CUSTOMER), false);
+});
+
+test('CANCELLED_BY_MASTER and DISPUTED are deliberately unreachable this milestone', () => {
+  for (const from of Object.values(OrderStatus)) {
+    assert.equal(canTransition(from, OrderStatus.CANCELLED_BY_MASTER), false, from);
+    assert.equal(canTransition(from, OrderStatus.DISPUTED), false, from);
+  }
+});
+
+test('ACTIVE_MASTER_JOB_STATUSES covers the whole occupied window, not just ASSIGNED', () => {
+  const expected: OrderStatus[] = [
+    OrderStatus.ASSIGNED,
+    OrderStatus.EN_ROUTE,
+    OrderStatus.IN_PROGRESS,
+    OrderStatus.COMPLETED,
+  ];
+  assert.deepEqual(ACTIVE_MASTER_JOB_STATUSES, expected);
+  assert.ok(!ACTIVE_MASTER_JOB_STATUSES.includes(OrderStatus.CLOSED), 'CLOSED moves to job history, not "current job"');
 });

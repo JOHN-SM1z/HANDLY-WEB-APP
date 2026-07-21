@@ -149,6 +149,12 @@ export const orderSubmitSchema = z.object({
 });
 export type OrderSubmitInput = z.infer<typeof orderSubmitSchema>;
 
+/** Master-entered final price at job completion (M4) — must land within the quoted range. */
+export const orderCompleteSchema = z.object({
+  finalAmount: z.number().int().positive(),
+});
+export type OrderCompleteInput = z.infer<typeof orderCompleteSchema>;
+
 // ─────────────── Response shapes ───────────────
 export interface AiDiagnosisDto {
   issueSummary: string;
@@ -163,6 +169,8 @@ export interface AiDiagnosisDto {
 export interface OrderMediaDto {
   id: string;
   kind: 'PHOTO' | 'VIDEO';
+  /** Customer's initial problem photos/videos vs. the master's completion evidence (M4). */
+  uploadedByRole: 'CUSTOMER' | 'MASTER';
   url: string;
   mime: string;
   sizeBytes: number;
@@ -199,6 +207,8 @@ export interface OrderDto {
   priceMin: number | null;
   priceMax: number | null;
   platformFee: number;
+  /** Set by the master at completion (M4) — the actual agreed price. */
+  finalAmount: number | null;
   media: OrderMediaDto[];
   history: OrderStatusHistoryDto[];
   master: OrderMasterDto | null;

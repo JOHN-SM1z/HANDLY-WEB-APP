@@ -61,6 +61,11 @@ export const envSchema = z.object({
   DISPATCH_OFFER_TTL_SCHEDULED_SECONDS: z.coerce.number().int().positive().default(600),
   DISPATCH_OFFER_TTL_PRIORITY_SECONDS: z.coerce.number().int().positive().default(120),
   DISPATCH_OFFER_TTL_EMERGENCY_SECONDS: z.coerce.number().int().positive().default(60),
+
+  // Payments (M5). Only "mock" is implemented — CLICK/PAYME/UZUM need real
+  // merchant credentials that don't exist yet; the enum + PaymentProvider
+  // interface exist so a real rail slots in without touching callers.
+  PAYMENT_PROVIDER: z.enum(['mock']).default('mock'),
 });
 
 export type Env = z.infer<typeof envSchema>;

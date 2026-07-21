@@ -18,15 +18,20 @@ import {
   orderSubmitSchema,
   orderUpdateSchema,
   OrderStatus,
+  paymentInitiateSchema,
 } from '@handly/contracts';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { ZodValidationPipe } from '../../common/http/zod-validation.pipe';
+import { PaymentsService } from '../payments/payments.service';
 import { OrdersService } from './orders.service';
 
 @Roles('CUSTOMER')
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly orders: OrdersService) {}
+  constructor(
+    private readonly orders: OrdersService,
+    private readonly payments: PaymentsService,
+  ) {}
 
   @Post()
   create(
@@ -107,5 +112,29 @@ export class OrdersController {
   @HttpCode(200)
   cancel(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.orders.cancel(userId, id);
+  }
+
+  /** Customer confirms a COMPLETED job, closing it (M4). */
+  @Post(':id/confirm')
+  @HttpCode(200)
+  confirm(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.confirmCompletion(userId, id);
+  }
+
+  // ─────────────── Payments (M5) ───────────────
+
+  @Post(':id/payments')
+  @HttpCode(201)
+  initiatePayment(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(paymentInitiateSchema)) dto: ReturnType<typeof paymentInitiateSchema.parse>,
+  ) {
+    return this.payments.initiate(userId, id, dto.method);
+  }
+
+  @Get(':id/payments')
+  listPayments(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.payments.list(userId, id);
   }
 }

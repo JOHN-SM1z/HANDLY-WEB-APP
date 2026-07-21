@@ -23,6 +23,8 @@ export const ordersApi = {
   diagnose: (id: string) => api.post<OrderDto>(`/orders/${id}/diagnose`, undefined, true),
   submit: (id: string) => api.post<OrderDto>(`/orders/${id}/submit`, { consent: true }, true),
   cancel: (id: string) => api.post<OrderDto>(`/orders/${id}/cancel`, undefined, true),
+  /** Customer confirms a COMPLETED job, closing it (M4). */
+  confirm: (id: string) => api.post<OrderDto>(`/orders/${id}/confirm`, undefined, true),
   deleteMedia: (orderId: string, mediaId: string) =>
     api.del<OrderDto>(`/orders/${orderId}/media/${mediaId}`),
 

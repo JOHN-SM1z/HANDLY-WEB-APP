@@ -42,7 +42,10 @@ const RETRYABLE_METHODS = new Set(['GET', 'PATCH', 'DELETE']);
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
+  // Fastify's body parser rejects a request that declares Content-Type: application/json
+  // but sends no body ("Body cannot be empty...") — so only set it when there's a body.
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.auth && accessToken) headers.Authorization = `Bearer ${accessToken}`;
   const body = options.body !== undefined ? JSON.stringify(options.body) : undefined;
 

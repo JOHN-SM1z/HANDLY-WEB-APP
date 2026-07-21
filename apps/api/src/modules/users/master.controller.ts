@@ -1,10 +1,29 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { masterAvailabilityUpdateSchema, masterProfileUpdateSchema } from '@handly/contracts';
+import {
+  masterAvailabilityUpdateSchema,
+  masterProfileUpdateSchema,
+  orderCompleteSchema,
+} from '@handly/contracts';
 import { CurrentUser, Roles } from '../../common/auth/decorators';
 import { ZodValidationPipe } from '../../common/http/zod-validation.pipe';
 import { DispatchService } from '../dispatch/dispatch.service';
 import { OrdersService } from '../orders/orders.service';
+import { PaymentsService } from '../payments/payments.service';
 import { UsersService } from './users.service';
 
 const mediaSchema = z.object({
@@ -20,6 +39,7 @@ export class MasterController {
     private readonly users: UsersService,
     private readonly dispatch: DispatchService,
     private readonly orders: OrdersService,
+    private readonly payments: PaymentsService,
   ) {}
 
   @Get()
@@ -78,5 +98,58 @@ export class MasterController {
   @Get('current-job')
   getCurrentJob(@CurrentUser('id') userId: string) {
     return this.orders.getCurrentJob(userId);
+  }
+
+  // ─────────────── Job execution (M4) ───────────────
+
+  @Post('current-job/:id/en-route')
+  @HttpCode(200)
+  startEnRoute(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.startEnRoute(userId, id);
+  }
+
+  @Post('current-job/:id/start')
+  @HttpCode(200)
+  startService(@CurrentUser('id') userId: string, @Param('id', ParseUUIDPipe) id: string) {
+    return this.orders.startService(userId, id);
+  }
+
+  @Post('current-job/:id/complete')
+  @HttpCode(200)
+  completeService(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(orderCompleteSchema)) dto: ReturnType<typeof orderCompleteSchema.parse>,
+  ) {
+    return this.orders.completeService(userId, id, dto.finalAmount);
+  }
+
+  @Post('current-job/:id/media')
+  @HttpCode(201)
+  async addJobMedia(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: FastifyRequest,
+  ) {
+    const mp = await (
+      req as FastifyRequest & {
+        file: (opts?: unknown) => Promise<{ toBuffer(): Promise<Buffer>; mimetype: string } | undefined>;
+      }
+    ).file();
+    if (!mp) throw new BadRequestException('Fayl yuborilmadi (multipart/form-data, field: file)');
+    const buffer = await mp.toBuffer();
+    return this.orders.addJobMedia(userId, id, { buffer, mime: mp.mimetype });
+  }
+
+  @Get('jobs')
+  getJobHistory(@CurrentUser('id') userId: string, @Query('cursor') cursor?: string) {
+    return this.orders.getJobHistory(userId, cursor || undefined);
+  }
+
+  // ─────────────── Earnings (M5) ───────────────
+
+  @Get('earnings')
+  getEarnings(@CurrentUser('id') userId: string, @Query('cursor') cursor?: string) {
+    return this.payments.getMasterEarnings(userId, cursor || undefined);
   }
 }

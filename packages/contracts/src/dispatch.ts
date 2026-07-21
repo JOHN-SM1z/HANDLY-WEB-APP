@@ -23,12 +23,20 @@ export const NotificationType = {
   OFFER_EXPIRED: 'OFFER_EXPIRED',
   ORDER_ASSIGNED: 'ORDER_ASSIGNED',
   ORDER_SEARCH_FAILED: 'ORDER_SEARCH_FAILED',
+  ORDER_COMPLETED: 'ORDER_COMPLETED',
+  ORDER_CLOSED: 'ORDER_CLOSED',
+  PAYMENT_SUCCEEDED: 'PAYMENT_SUCCEEDED',
+  PAYMENT_FAILED: 'PAYMENT_FAILED',
 } as const;
 export const notificationTypeSchema = z.enum([
   NotificationType.OFFER_RECEIVED,
   NotificationType.OFFER_EXPIRED,
   NotificationType.ORDER_ASSIGNED,
   NotificationType.ORDER_SEARCH_FAILED,
+  NotificationType.ORDER_COMPLETED,
+  NotificationType.ORDER_CLOSED,
+  NotificationType.PAYMENT_SUCCEEDED,
+  NotificationType.PAYMENT_FAILED,
 ]);
 export type NotificationType = z.infer<typeof notificationTypeSchema>;
 

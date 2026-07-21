@@ -3,7 +3,14 @@
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { COMPLEXITY_INFO, type OrderStatus, SERVICE_TIER_INFO } from '@handly/contracts';
+import {
+  COMPLEXITY_INFO,
+  type OrderStatus,
+  PAYMENT_METHOD_INFO,
+  type PaymentMethod,
+  type PaymentStatus,
+  SERVICE_TIER_INFO,
+} from '@handly/contracts';
 import { AppHeader } from '@/components/app-header';
 import { OrderStatusBadge } from '@/components/order/order-status-badge';
 import { Alert } from '@/components/ui/alert';
@@ -14,10 +21,21 @@ import { Logo } from '@/components/ui/logo';
 import { ApiError } from '@/lib/api';
 import { formatSom, formatSomRange } from '@/lib/format';
 import { ordersApi } from '@/lib/orders';
+import { paymentsApi } from '@/lib/payments';
 import { useSocketEvent } from '@/lib/socket';
 import { useRequireAuth } from '@/lib/use-require-auth';
 
-const CANCELABLE: OrderStatus[] = ['DRAFT', 'PRICED', 'SEARCHING', 'ASSIGNED'];
+const CANCELABLE: OrderStatus[] = ['DRAFT', 'PRICED', 'SEARCHING', 'ASSIGNED', 'EN_ROUTE'];
+const ASSIGNED_STATUSES: OrderStatus[] = ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+const PAYABLE_STATUSES: OrderStatus[] = ['COMPLETED', 'CLOSED'];
+const PAYMENT_METHODS: PaymentMethod[] = ['MOCK', 'CLICK', 'PAYME', 'UZUM'];
+const PAYMENT_STATUS_LABEL: Record<PaymentStatus, { labelUz: string; variant: 'gray' | 'blue' | 'green' | 'red' }> = {
+  PENDING: { labelUz: 'Kutilmoqda', variant: 'gray' },
+  PROCESSING: { labelUz: 'Jarayonda', variant: 'blue' },
+  SUCCEEDED: { labelUz: "To'landi", variant: 'green' },
+  FAILED: { labelUz: 'Amalga oshmadi', variant: 'red' },
+  CANCELLED: { labelUz: 'Bekor qilindi', variant: 'gray' },
+};
 
 export default function OrderDetailPage() {
   const { ready, user } = useRequireAuth();
@@ -27,12 +45,22 @@ export default function OrderDetailPage() {
 
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('MOCK');
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
 
   const { data: order, isLoading, isError, refetch } = useQuery({
     queryKey: ['order', params.id],
     queryFn: () => ordersApi.get(params.id),
     enabled: Boolean(user) && Boolean(params.id),
+  });
+
+  const { data: paymentPage, refetch: refetchPayments } = useQuery({
+    queryKey: ['order', params.id, 'payments'],
+    queryFn: () => paymentsApi.list(params.id),
+    enabled: Boolean(user) && Boolean(params.id) && Boolean(order && PAYABLE_STATUSES.includes(order.status)),
   });
 
   // Live push while dispatch is running (M3) — a master accepting/the pool
@@ -53,6 +81,9 @@ export default function OrderDetailPage() {
     );
   }
 
+  const customerMedia = order?.media.filter((m) => m.uploadedByRole === 'CUSTOMER') ?? [];
+  const masterMedia = order?.media.filter((m) => m.uploadedByRole === 'MASTER') ?? [];
+
   async function handleCancel() {
     if (!order) return;
     setCancelling(true);
@@ -66,6 +97,35 @@ export default function OrderDetailPage() {
       setError(err instanceof ApiError ? err.message : 'Bekor qilishda xatolik');
     } finally {
       setCancelling(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!order) return;
+    setConfirming(true);
+    setError(null);
+    try {
+      await ordersApi.confirm(order.id);
+      await queryClient.invalidateQueries({ queryKey: ['order', order.id] });
+      await queryClient.invalidateQueries({ queryKey: ['orders'] });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Tasdiqlashda xatolik');
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function handlePay() {
+    if (!order) return;
+    setPaying(true);
+    setPayError(null);
+    try {
+      await paymentsApi.initiate(order.id, selectedMethod);
+      await refetchPayments();
+    } catch (err) {
+      setPayError(err instanceof ApiError ? err.message : "To'lovda xatolik");
+    } finally {
+      setPaying(false);
     }
   }
 
@@ -100,9 +160,9 @@ export default function OrderDetailPage() {
 
           <p className="text-sm leading-relaxed text-content-secondary">{order.description}</p>
 
-          {order.media.length > 0 && (
+          {customerMedia.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {order.media.map((m) =>
+              {customerMedia.map((m) =>
                 m.kind === 'PHOTO' ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -198,7 +258,7 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          {order.status === 'ASSIGNED' && order.master && (
+          {ASSIGNED_STATUSES.includes(order.status) && order.master && (
             <div className="flex items-center gap-3 rounded-xl border border-primary bg-surface p-4 shadow-card">
               <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary-soft-fg">
                 {(order.master.fullName ?? 'US').slice(0, 2).toUpperCase()}
@@ -212,6 +272,152 @@ export default function OrderDetailPage() {
               </div>
             </div>
           )}
+
+          {order.status === 'EN_ROUTE' && (
+            <div className="rounded-xl border border-info-bg bg-info-bg p-4 text-center">
+              <p className="text-sm font-medium text-info-fg">Usta sizga tomon yo&apos;lda</p>
+            </div>
+          )}
+
+          {order.status === 'IN_PROGRESS' && (
+            <div className="rounded-xl border border-info-bg bg-info-bg p-4 text-center">
+              <p className="text-sm font-medium text-info-fg">Usta ish joyida — xizmat bajarilmoqda</p>
+            </div>
+          )}
+
+          {order.status === 'COMPLETED' && (
+            <div className="flex flex-col gap-3 rounded-xl border border-success-bg bg-success-bg p-4">
+              <div className="text-center">
+                <p className="text-sm font-medium text-success-fg">Usta ishni tugallandi deb belgiladi</p>
+                {order.finalAmount != null && (
+                  <p className="mt-1 text-lg font-semibold tabular-nums text-content-primary">
+                    {formatSom(order.finalAmount)}
+                  </p>
+                )}
+              </div>
+              {masterMedia.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {masterMedia.map((m) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={m.id}
+                      src={m.url}
+                      alt=""
+                      className="h-16 w-16 rounded-lg border border-border-secondary object-cover"
+                    />
+                  ))}
+                </div>
+              )}
+              <Button fullWidth loading={confirming} onClick={() => void handleConfirm()}>
+                Ishni qabul qilish va yopish
+              </Button>
+            </div>
+          )}
+
+          {order.status === 'CLOSED' && (
+            <div className="rounded-xl border border-border-tertiary bg-background-secondary p-4 text-center">
+              <p className="text-sm font-medium text-content-primary">Buyurtma yakunlandi</p>
+              {order.finalAmount != null && (
+                <p className="mt-1 text-sm tabular-nums text-content-secondary">{formatSom(order.finalAmount)}</p>
+              )}
+              {masterMedia.length > 0 && (
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {masterMedia.map((m) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={m.id}
+                      src={m.url}
+                      alt=""
+                      className="h-16 w-16 rounded-lg border border-border-secondary object-cover"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {PAYABLE_STATUSES.includes(order.status) && (() => {
+            const payments = paymentPage?.items ?? [];
+            const latest = payments[0];
+            const isSettledOrPending = latest && latest.status !== 'FAILED' && latest.status !== 'CANCELLED';
+
+            return (
+              <div className="flex flex-col gap-3 rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
+                <p className="text-sm font-semibold text-content-primary">To&apos;lov</p>
+                {payError && <Alert>{payError}</Alert>}
+
+                {isSettledOrPending && latest ? (
+                  <div className="flex items-center justify-between rounded-lg bg-background-secondary p-3">
+                    <div>
+                      <p className="text-sm font-medium text-content-primary">
+                        {PAYMENT_METHOD_INFO[latest.method].labelUz}
+                      </p>
+                      <p className="text-xs text-content-muted">
+                        {new Date(latest.createdAt).toLocaleString('uz-UZ', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold tabular-nums text-content-primary">
+                        {formatSom(latest.amount)}
+                      </p>
+                      <Badge variant={PAYMENT_STATUS_LABEL[latest.status].variant} className="mt-0.5">
+                        {PAYMENT_STATUS_LABEL[latest.status].labelUz}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {latest && latest.status === 'FAILED' && (
+                      <Alert>
+                        {latest.failureReason ?? "Oxirgi to'lov amalga oshmadi"} — qayta urinib ko&apos;ring.
+                      </Alert>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {PAYMENT_METHODS.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setSelectedMethod(m)}
+                          className={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                            selectedMethod === m
+                              ? 'border-primary bg-primary-soft text-primary-soft-fg'
+                              : 'border-border-secondary text-content-secondary'
+                          }`}
+                        >
+                          {PAYMENT_METHOD_INFO[m].labelUz}
+                        </button>
+                      ))}
+                    </div>
+                    <Button fullWidth loading={paying} onClick={() => void handlePay()}>
+                      {order.finalAmount != null ? `${formatSom(order.finalAmount)} to'lash` : "To'lash"}
+                    </Button>
+                  </>
+                )}
+
+                {payments.length > 1 && (
+                  <div className="flex flex-col gap-1.5 border-t border-border-tertiary pt-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-content-muted">
+                      To&apos;lov tarixi
+                    </p>
+                    {payments.slice(1).map((p) => (
+                      <div key={p.id} className="flex items-center justify-between text-xs text-content-secondary">
+                        <span>{PAYMENT_METHOD_INFO[p.method].labelUz}</span>
+                        <span className="tabular-nums">{formatSom(p.amount)}</span>
+                        <Badge variant={PAYMENT_STATUS_LABEL[p.status].variant}>
+                          {PAYMENT_STATUS_LABEL[p.status].labelUz}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-content-muted">
