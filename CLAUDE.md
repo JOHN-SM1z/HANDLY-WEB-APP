@@ -16,7 +16,8 @@ Handly is a **managed marketplace for home services in Uzbekistan** (plumber, el
 - **Batch 1 (M4 Job execution + M5 Payments) complete.**
 - **Batch 2 (Trust, Safety & Marketplace Growth) complete (2026-07-21).**
 - **Batch 3 (Operations & Scale) complete (2026-07-22).** **The batch roadmap below is the corrected, definitive numbering — do not reinterpret milestone/batch numbers from `docs/ARCHITECTURE.md`'s original (pre-Batch-1) roadmap table, which described different scope under those same numbers.**
-- **Batch 4 (Launch Readiness) complete (2026-07-22).** Infrastructure, monitoring, CI/CD, backups, security hardening, load testing, disaster recovery, production deployment — see "What Batch 4 shipped" below. **Product development is now feature-complete per the founder's roadmap. Waiting on founder approval before any further work.**
+- **Batch 4 (Launch Readiness) complete (2026-07-22).** Infrastructure, monitoring, CI/CD, backups, security hardening, load testing, disaster recovery, production deployment — see "What Batch 4 shipped" below.
+- **Current phase: beta prep, marketplace validation, customer acquisition, master onboarding, and growth experiments — not further infrastructure work.** `docs/runbooks/infrastructure-risk-checklist.md` is a **living document** tracking remaining infra risk (tiered: required before beta / before public launch / only after significant scale) — consult and update it during this phase, but **do not re-audit or rebuild completed Batch 4 work without evidence of a regression** (a real incident, a failing health check, a metric that stops making sense). Only interrupt product/growth work for a newly discovered critical security vulnerability, data-loss risk, payment-integrity issue, auth/authz failure, or severe reliability problem.
 
 ## Monorepo layout (pnpm workspaces + Turborepo)
 
