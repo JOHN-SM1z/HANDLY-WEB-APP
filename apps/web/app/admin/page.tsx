@@ -67,6 +67,16 @@ export default function AdminOverviewPage() {
           <div className="grid grid-cols-2 gap-3">
             <StatCard label="Yaratilgan buyurtmalar" value={data.ordersCreated} />
             <StatCard label="Yakunlangan" value={data.ordersCompleted} />
+            {/* Beta Blocker Sprint — the two core "is the marketplace
+                actually working" signals: real-time online masters (not
+                just "had an order this range") and match success rate. */}
+            <StatCard label="Hozir onlayn ustalar" value={data.mastersOnlineNow} />
+            <StatCard
+              label="Moslashtirish muvaffaqiyati"
+              value={data.matchSuccessRate != null ? `${Math.round(data.matchSuccessRate * 100)}%` : '—'}
+            />
+            <StatCard label="Muddati o'tgan" value={data.ordersExpired} />
+            <StatCard label="Bekor qilingan" value={data.ordersCancelled} />
             <StatCard label="Faol ustalar" value={data.activeMasters} />
             <StatCard label="Faol mijozlar" value={data.activeCustomers} />
             <StatCard label="Daromad" value={formatSom(data.revenueTotal)} />

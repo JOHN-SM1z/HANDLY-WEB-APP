@@ -37,7 +37,16 @@ export class AdminController {
   ) {
     const rows = await this.prisma.verification.findMany({
       where: query.status ? { status: query.status } : { status: 'PENDING' },
-      include: { master: { include: { user: { select: { phone: true } } } } },
+      include: {
+        master: {
+          include: {
+            user: { select: { phone: true } },
+            // Beta Blocker Sprint — the master's uploaded certification
+            // photos, so a decide() call isn't made blind on note text alone.
+            media: { where: { kind: 'CERTIFICATION' } },
+          },
+        },
+      },
       orderBy: { createdAt: 'asc' },
       take: 50,
     });
@@ -47,6 +56,7 @@ export class AdminController {
       masterPhone: r.master.user.phone,
       status: r.status,
       note: r.note,
+      certifications: r.master.media.map((m) => ({ id: m.id, url: `/api/v1/media/master/${m.id}`, caption: m.caption })),
       createdAt: r.createdAt.toISOString(),
     }));
   }

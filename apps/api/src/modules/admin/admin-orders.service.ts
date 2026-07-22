@@ -14,6 +14,10 @@ interface ListFilters {
   status?: OrderStatus;
   categoryId?: string;
   serviceTier?: ServiceTier;
+  // Beta Blocker Sprint — "every order for this user," reachable from an
+  // admin user-detail page or the support lookup tool.
+  customerId?: string;
+  masterId?: string;
   dateFrom?: string;
   dateTo?: string;
   lat?: number;
@@ -61,6 +65,8 @@ export class AdminOrdersService {
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
         ...(filters.serviceTier ? { serviceTier: filters.serviceTier } : {}),
+        ...(filters.customerId ? { customerId: filters.customerId } : {}),
+        ...(filters.masterId ? { masterId: filters.masterId } : {}),
         ...(filters.dateFrom || filters.dateTo
           ? {
               createdAt: {
@@ -113,6 +119,9 @@ export class AdminOrdersService {
         method: p.method,
         status: p.status,
         amount: p.amount,
+        failureReason: p.failureReason,
+        resolutionNote: p.resolutionNote,
+        resolvedAt: p.resolvedAt?.toISOString() ?? null,
         createdAt: p.createdAt.toISOString(),
       })),
     };

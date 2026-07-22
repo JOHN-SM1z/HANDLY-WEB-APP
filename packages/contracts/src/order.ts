@@ -188,12 +188,24 @@ export interface OrderStatusHistoryDto {
   createdAt: string;
 }
 
-/** Populated once an offer is accepted (M3) — null before ASSIGNED. */
+/** Populated once an offer is accepted (M3) — null before ASSIGNED. `phone`
+ * is the minimal beta contact channel (Beta Blocker Sprint) — only reaches
+ * the customer once this object is non-null, i.e. never before ASSIGNED. */
 export interface OrderMasterDto {
   id: string;
   fullName: string | null;
+  phone: string;
   ratingAvg: number;
   jobsDone: number;
+}
+
+/** Symmetric counterpart to OrderMasterDto (Beta Blocker Sprint) — populated
+ * on the master's view of the order under the exact same condition
+ * (masterId set, i.e. ASSIGNED or later), never before assignment. */
+export interface OrderCustomerDto {
+  id: string;
+  fullName: string | null;
+  phone: string;
 }
 
 export interface OrderDto {
@@ -218,6 +230,7 @@ export interface OrderDto {
   media: OrderMediaDto[];
   history: OrderStatusHistoryDto[];
   master: OrderMasterDto | null;
+  customer: OrderCustomerDto | null;
   createdAt: string;
   submittedAt: string | null;
 }

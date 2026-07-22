@@ -78,6 +78,24 @@ export default function AdminVerificationsPage() {
             <div key={v.id} className="flex flex-col gap-2 rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
               <p className="text-sm font-semibold text-content-primary">{v.masterPhone}</p>
               {v.note && <p className="text-xs text-content-secondary">{v.note}</p>}
+              {/* Beta Blocker Sprint — a master's uploaded certification
+                  photos, so this decision isn't made on note text alone. */}
+              {v.certifications.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {v.certifications.map((c) => (
+                    <a key={c.id} href={c.url} target="_blank" rel="noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={c.url}
+                        alt={c.caption ?? 'Sertifikat'}
+                        className="h-20 w-20 rounded-md border border-border-secondary object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-content-muted">Hujjat yuklanmagan</p>
+              )}
               <Textarea
                 aria-label={`${v.masterPhone} uchun izoh`}
                 placeholder="Izoh (rad etishda majburiy)"

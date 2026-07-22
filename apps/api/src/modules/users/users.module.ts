@@ -9,6 +9,7 @@ import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { TrustModule } from '../trust/trust.module';
 import { VerificationModule } from '../verification/verification.module';
 import { MasterController } from './master.controller';
+import { MasterMediaController } from './master-media.controller';
 import { MeController } from './me.controller';
 import { UsersService } from './users.service';
 
@@ -24,7 +25,7 @@ import { UsersService } from './users.service';
     ReferralsModule,
     AnalyticsModule,
   ],
-  controllers: [MeController, MasterController],
+  controllers: [MeController, MasterController, MasterMediaController],
   providers: [UsersService],
   exports: [UsersService],
 })

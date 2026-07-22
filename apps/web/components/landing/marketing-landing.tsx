@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { CategoryIcon } from '@/components/category-icon';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
-import { Rating } from '@/components/ui/badge';
 import { ArrowRightIcon, CheckIcon, MapPinIcon } from '@/components/ui/icons';
 import { categoriesApi } from '@/lib/categories';
 import { formatSom } from '@/lib/format';
@@ -99,21 +98,13 @@ export function MarketingLanding() {
               </Button>
             </Link>
           </div>
-          <div className="mt-2 flex flex-wrap gap-7">
-            <div>
-              <div className="text-xl font-bold">12,400+</div>
-              <div className="text-xs text-content-muted">tasdiqlangan usta</div>
-            </div>
-            <div className="w-px bg-border-secondary" />
-            <div>
-              <Rating value="4.9" />
-              <div className="text-xs text-content-muted">o&apos;rtacha reyting</div>
-            </div>
-            <div className="w-px bg-border-secondary" />
-            <div>
-              <div className="text-xl font-bold">~60 daqiqa</div>
-              <div className="text-xs text-content-muted">o&apos;rtacha javob vaqti</div>
-            </div>
+          {/* Beta Blocker Sprint: removed fabricated stats ("12,400+ masters",
+              "4.9 rating", "~60 daqiqa response time") — no real usage data
+              exists yet for a brand-new beta. Honest framing instead of
+              invented social proof. */}
+          <div className="mt-2 flex items-center gap-2 rounded-lg bg-background-secondary px-3.5 py-2.5 text-sm text-content-secondary">
+            <CheckIcon width={16} height={16} className="shrink-0 text-primary" />
+            Hozir beta bosqichida — birinchi mijoz va ustalarni kutyapmiz.
           </div>
         </div>
 
@@ -142,7 +133,7 @@ export function MarketingLanding() {
           </Link>
           <div className="flex items-center gap-2 text-xs text-content-muted">
             <CheckIcon width={14} height={14} className="text-success-fg" />
-            Tashrifdan 2 soat oldin bepul bekor qilish
+            Xizmat boshlanmaguncha bepul bekor qilish
           </div>
         </div>
       </section>
@@ -219,21 +210,18 @@ export function MarketingLanding() {
             ))}
           </div>
         </div>
+        {/* Beta Blocker Sprint: removed an invented customer testimonial
+            ("Malika K.") — no real reviews exist yet for a brand-new beta.
+            Honest framing instead of fabricated social proof. */}
         <div className="flex flex-col gap-5 rounded-xl bg-ink p-10 text-ink-fg">
           <Logo size={56} />
           <div className="text-2xl font-bold leading-snug tracking-tight">
-            &quot;Usta 40 daqiqada yetib keldi, oqishni tuzatdi, narx bir so&apos;m ham
-            o&apos;zgarmadi.&quot;
+            Handly beta bosqichida ishga tushmoqda.
           </div>
-          <div className="flex items-center gap-3">
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-              MK
-            </span>
-            <div>
-              <div className="text-sm font-semibold">Malika K.</div>
-              <div className="text-xs opacity-70">Chilonzor, Toshkent</div>
-            </div>
-          </div>
+          <p className="text-sm leading-relaxed opacity-80">
+            Birinchi mijozlar va ustalarni qidiryapmiz — real fikr-mulohazalar shu yerdan boshlanadi.
+            Har bir tasdiqlangan usta va har bir yakunlangan ish haqiqiy bo&apos;ladi.
+          </p>
         </div>
       </section>
 
@@ -271,7 +259,6 @@ export function MarketingLanding() {
           <a href="#masters" className="text-xs text-content-secondary">
             Ustalar uchun
           </a>
-          <span className="text-xs text-content-secondary">O&apos;zbekcha · Русский</span>
         </div>
       </footer>
     </div>

@@ -40,6 +40,10 @@ export const adminOrderListQuerySchema = z.object({
   status: z.nativeEnum(OrderStatus).optional(),
   categoryId: z.string().uuid().optional(),
   serviceTier: z.nativeEnum(ServiceTier).optional(),
+  // Beta Blocker Sprint — lets support look up "every order for this user"
+  // from either an admin user-detail page or the support lookup tool.
+  customerId: z.string().uuid().optional(),
+  masterId: z.string().uuid().optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   // Geographic filter — same constant-radius pre-filter shape as dispatch-eligibility.ts.
@@ -151,18 +155,37 @@ export interface AdminOrderDetailDto extends AdminOrderListItemDto {
     createdAt: string;
   }>;
   dispatches: Array<{ masterId: string; status: string; distanceM: number; offeredAt: string }>;
-  payments: Array<{ id: string; method: string; status: string; amount: number; createdAt: string }>;
+  payments: Array<{
+    id: string;
+    method: string;
+    status: string;
+    amount: number;
+    failureReason: string | null;
+    resolutionNote: string | null;
+    resolvedAt: string | null;
+    createdAt: string;
+  }>;
 }
 
 export interface AdminAnalyticsOverviewDto {
   ordersCreated: number;
   ordersCompleted: number;
   ordersCancelled: number;
+  /** Beta Blocker Sprint — orders that exhausted the dispatch pool in range. */
+  ordersExpired: number;
   activeMasters: number;
   activeCustomers: number;
+  /** Beta Blocker Sprint — real-time count, not date-scoped (current snapshot,
+   * same convention as verificationStats/subscriptionStats below). */
+  mastersOnlineNow: number;
   revenueTotal: number;
   avgResponseTimeSeconds: number | null;
   avgCompletionTimeSeconds: number | null;
+  /** Beta Blocker Sprint — order created → first reached ASSIGNED, in range. */
+  avgAssignmentTimeSeconds: number | null;
+  /** Beta Blocker Sprint — assigned / (assigned + expired) among orders that
+   * left SEARCHING in range; null if neither happened (no denominator). */
+  matchSuccessRate: number | null;
   customerSatisfactionAvg: number | null;
   verificationStats: { unverified: number; pending: number; verified: number; rejected: number };
   subscriptionStats: { free: number; premium: number; trial: number };
@@ -195,7 +218,17 @@ export interface FeatureFlagDto {
 
 export interface AdminSupportLookupDto {
   user: AdminUserDetailDto;
-  payments: Array<{ id: string; orderId: string; method: string; status: string; amount: number; createdAt: string }>;
+  payments: Array<{
+    id: string;
+    orderId: string;
+    method: string;
+    status: string;
+    amount: number;
+    failureReason: string | null;
+    resolutionNote: string | null;
+    resolvedAt: string | null;
+    createdAt: string;
+  }>;
   penalties: { items: Array<{ eventType: string; severity: string; points: number; createdAt: string }>; activePoints: number } | null;
   referrals: {
     referralCode: string;

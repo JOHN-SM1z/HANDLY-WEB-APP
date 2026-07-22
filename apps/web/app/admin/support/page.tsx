@@ -91,7 +91,11 @@ export default function AdminSupportPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <StatCard label="Buyurtmalar" value={data.user.ordersCount} />
+              <Link
+                href={`/admin/orders?${data.user.role === 'MASTER' ? 'masterId' : 'customerId'}=${data.user.id}`}
+              >
+                <StatCard label="Buyurtmalar" value={data.user.ordersCount} />
+              </Link>
               <StatCard label="Referal cashback" value={formatSom(data.referrals?.totalCashbackEarned ?? 0)} />
             </div>
 
@@ -108,10 +112,16 @@ export default function AdminSupportPage() {
               ) : (
                 <div className="flex flex-col gap-2">
                   {data.payments.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-background-secondary px-3 py-2">
-                      <span className="text-xs text-content-secondary">{p.method}</span>
-                      <StatusBadge status={p.status} />
-                      <span className="text-xs font-medium text-content-primary">{formatSom(p.amount)}</span>
+                    <div key={p.id} className="flex flex-col gap-1 rounded-lg bg-background-secondary px-3 py-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-content-secondary">{p.method}</span>
+                        <StatusBadge status={p.status} />
+                        <span className="text-xs font-medium text-content-primary">{formatSom(p.amount)}</span>
+                      </div>
+                      {p.failureReason && <p className="text-xs text-danger-fg">Sabab: {p.failureReason}</p>}
+                      {p.resolutionNote && (
+                        <p className="text-xs text-content-muted">Hal qilindi: {p.resolutionNote}</p>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/admin/status-badge';
@@ -88,10 +89,15 @@ export default function AdminCustomerDetailPage() {
               <StatusBadge status={data.status} />
             </div>
 
-            <div className="rounded-xl border border-border-tertiary bg-surface p-4 shadow-card">
+            <Link
+              href={`/admin/orders?customerId=${params.id}`}
+              className="block rounded-xl border border-border-tertiary bg-surface p-4 shadow-card"
+            >
               <p className="text-xs text-content-muted">Buyurtmalar soni</p>
-              <p className="text-lg font-semibold text-content-primary">{data.ordersCount}</p>
-            </div>
+              <p className="text-lg font-semibold text-primary underline-offset-2 hover:underline">
+                {data.ordersCount}
+              </p>
+            </Link>
 
             {actionError && <Alert>{actionError}</Alert>}
 

@@ -64,13 +64,26 @@ export default function AdminAnalyticsPage() {
                 <StatCard label="Yaratilgan" value={data.ordersCreated} />
                 <StatCard label="Yakunlangan" value={data.ordersCompleted} />
                 <StatCard label="Bekor qilingan" value={data.ordersCancelled} />
+                <StatCard label="Muddati o'tgan" value={data.ordersExpired} />
+              </div>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-content-muted">Ta&apos;minot</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <StatCard label="Hozir onlayn" value={data.mastersOnlineNow} />
+                <StatCard label="Faol ustalar (davr)" value={data.activeMasters} />
               </div>
             </section>
 
             <section>
               <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-content-muted">Marketplace</h2>
               <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Faol ustalar" value={data.activeMasters} />
+                <StatCard
+                  label="Moslashtirish muvaffaqiyati"
+                  value={data.matchSuccessRate != null ? `${Math.round(data.matchSuccessRate * 100)}%` : '—'}
+                />
+                <StatCard label="O'rtacha tayinlash vaqti" value={formatSeconds(data.avgAssignmentTimeSeconds)} />
                 <StatCard label="Faol mijozlar" value={data.activeCustomers} />
                 <StatCard label="Daromad" value={formatSom(data.revenueTotal)} />
                 <StatCard

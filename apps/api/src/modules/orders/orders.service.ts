@@ -56,14 +56,30 @@ type OrderWithRelations = OrderRow & {
   category: ServiceCategory | null;
   media: OrderMedia[];
   statusHistory: OrderStatusHistory[];
-  master: { userId: string; fullName: string | null; ratingAvg: Prisma.Decimal; jobsDone: number } | null;
+  master:
+    | {
+        userId: string;
+        fullName: string | null;
+        ratingAvg: Prisma.Decimal;
+        jobsDone: number;
+        user: { phone: string };
+      }
+    | null;
+  customer: { id: string; phone: string; customerProfile: { fullName: string | null } | null };
 };
 
 const FULL_INCLUDE = {
   category: true,
   media: { orderBy: { createdAt: 'asc' as const } },
   statusHistory: { orderBy: { createdAt: 'asc' as const } },
-  master: { select: { userId: true, fullName: true, ratingAvg: true, jobsDone: true } },
+  master: {
+    select: { userId: true, fullName: true, ratingAvg: true, jobsDone: true, user: { select: { phone: true } } },
+  },
+  // Beta Blocker Sprint — minimal customer↔master contact. Only ever exposed
+  // in toDto() once order.masterId is set (mirrors `master`'s own relation-
+  // driven null-until-ASSIGNED shape) — fetched here unconditionally since
+  // Order.customer is a required (non-optional) relation.
+  customer: { select: { id: true, phone: true, customerProfile: { select: { fullName: true } } } },
 };
 
 @Injectable()
@@ -688,8 +704,20 @@ export class OrdersService {
         ? {
             id: order.master.userId,
             fullName: order.master.fullName,
+            phone: order.master.user.phone,
             ratingAvg: Number(order.master.ratingAvg),
             jobsDone: order.master.jobsDone,
+          }
+        : null,
+      // Only reaches the customer's own view (redundant there — see the
+      // frontend's rendering choice) once the master's view of this same
+      // shared OrderDto also becomes populated: both sides see contact info
+      // starting at ASSIGNED, never before.
+      customer: order.masterId
+        ? {
+            id: order.customer.id,
+            fullName: order.customer.customerProfile?.fullName ?? null,
+            phone: order.customer.phone,
           }
         : null,
       createdAt: order.createdAt.toISOString(),

@@ -152,6 +152,44 @@ export class PaymentsService {
     return updated;
   }
 
+  /**
+   * Admin manual-resolution foundation (Beta Blocker Sprint) — no real
+   * payment-provider reversal call (see PaymentProvider interface); this
+   * just records the outcome so a payment issue isn't a dead end. `refund`
+   * only ever transitions a SUCCEEDED payment to REFUNDED; a non-refund
+   * resolution just records the note/timestamp without touching status
+   * (e.g. "investigated a FAILED payment, told the customer to retry").
+   * `resolutionNote`/`resolvedByAdminId`/`resolvedAt` are set either way so
+   * there's always a record of who closed the loop and why.
+   */
+  async resolve(paymentId: string, adminId: string, refund: boolean, note: string): Promise<PaymentDto> {
+    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
+    if (!payment) throw new NotFoundException("To'lov topilmadi");
+    if (refund && payment.status !== 'SUCCEEDED') {
+      throw new ConflictException('Faqat muvaffaqiyatli to\'lovni qaytarish mumkin');
+    }
+
+    const updated = await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        ...(refund ? { status: 'REFUNDED' as const } : {}),
+        resolutionNote: note,
+        resolvedByAdminId: adminId,
+        resolvedAt: new Date(),
+      },
+    });
+
+    await this.notifications.notify(
+      payment.customerId,
+      'PAYMENT_RESOLVED',
+      refund ? "To'lovingiz qaytarildi" : "To'lov masalasi ko'rib chiqildi",
+      note,
+      { orderId: payment.orderId, paymentId: payment.id },
+    );
+
+    return this.toDto(updated);
+  }
+
   async list(customerId: string, orderId: string): Promise<PaymentListPage> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Buyurtma topilmadi');
@@ -200,6 +238,8 @@ export class PaymentsService {
       taxAmount: p.taxAmount,
       masterNetAmount: p.masterNetAmount,
       failureReason: p.failureReason,
+      resolutionNote: p.resolutionNote,
+      resolvedAt: p.resolvedAt?.toISOString() ?? null,
       createdAt: p.createdAt.toISOString(),
       succeededAt: p.succeededAt?.toISOString() ?? null,
       failedAt: p.failedAt?.toISOString() ?? null,

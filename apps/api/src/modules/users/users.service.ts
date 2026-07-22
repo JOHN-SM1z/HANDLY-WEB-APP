@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnsupportedMediaTypeException,
+} from '@nestjs/common';
 import type { MasterMediaKind, Prisma } from '@prisma/client';
 import type {
   AddressCreate,
@@ -8,12 +15,27 @@ import type {
 } from '@handly/contracts';
 import { FieldCrypto } from '../../infra/crypto/field-crypto';
 import { PrismaService } from '../../infra/prisma/prisma.service';
+import { matchesMagicBytes } from '../../infra/storage/magic-bytes';
+import { STORAGE_PROVIDER, type StorageProvider } from '../../infra/storage/storage-provider';
+
+/** Certification/portfolio uploads are photo evidence — same allow-list shape
+ * as orders.service.ts's PHOTO_MIMES (identity documents, diplomas, work
+ * photos), not duplicated as a shared export since each call site owns its
+ * own small allow-list already (matches the existing convention). */
+const MASTER_MEDIA_MIMES: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/heic': '.heic',
+};
+const MASTER_MEDIA_MAX_BYTES = 10 * 1024 * 1024;
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: FieldCrypto,
+    @Inject(STORAGE_PROVIDER) private readonly storage: StorageProvider,
   ) {}
 
   async getMe(userId: string) {
@@ -64,6 +86,7 @@ export class UsersService {
     if (!master) throw new NotFoundException('Usta profili topilmadi');
     return {
       fullName: master.fullName,
+      avatarUrl: master.avatarUrl,
       experienceYears: master.experienceYears,
       bio: master.bio,
       verificationStatus: master.verificationStatus,
@@ -118,6 +141,7 @@ export class UsersService {
 
     const data: Prisma.MasterProfileUpdateInput = {
       fullName: dto.fullName,
+      avatarUrl: dto.avatarUrl,
       experienceYears: dto.experienceYears,
       bio: dto.bio,
       isSelfEmployed: dto.isSelfEmployed,
@@ -131,6 +155,7 @@ export class UsersService {
         create: {
           userId,
           fullName: dto.fullName,
+          avatarUrl: dto.avatarUrl,
           experienceYears: dto.experienceYears,
           bio: dto.bio,
           isSelfEmployed: dto.isSelfEmployed,
@@ -164,12 +189,32 @@ export class UsersService {
   }
 
   // ── Master media (certifications / portfolio) ──
+  /**
+   * Beta Blocker Sprint — takes the real uploaded bytes and saves them via
+   * StorageProvider itself (same shape as OrdersService.saveMediaFile),
+   * rather than trusting a client-supplied objectKey. Certifications are the
+   * one piece of real evidence an admin reviews before verifying a master
+   * (see VerificationService.decide) — a client-chosen objectKey would let
+   * anyone point a "certification" at someone else's already-uploaded file.
+   */
   async addMasterMedia(
     userId: string,
-    input: { kind: MasterMediaKind; objectKey: string; caption?: string },
+    input: { kind: MasterMediaKind; buffer: Buffer; mime: string; caption?: string },
   ) {
+    if (!(input.mime in MASTER_MEDIA_MIMES)) {
+      throw new UnsupportedMediaTypeException('Faqat rasm (JPEG/PNG/WebP/HEIC) yuklash mumkin');
+    }
+    if (input.buffer.length > MASTER_MEDIA_MAX_BYTES) {
+      throw new BadRequestException('Fayl juda katta (maksimum 10 MB)');
+    }
+    if (!matchesMagicBytes(input.buffer, input.mime)) {
+      throw new UnsupportedMediaTypeException("Fayl mazmuni e'lon qilingan turga mos kelmadi");
+    }
+
+    const ext = MASTER_MEDIA_MIMES[input.mime]!;
+    const { objectKey } = await this.storage.save(input.buffer, { mime: input.mime, ext });
     const media = await this.prisma.masterMedia.create({
-      data: { masterId: userId, kind: input.kind, objectKey: input.objectKey, caption: input.caption },
+      data: { masterId: userId, kind: input.kind, objectKey, mime: input.mime, caption: input.caption },
     });
     return { id: media.id, kind: media.kind, objectKey: media.objectKey, caption: media.caption };
   }
@@ -180,6 +225,15 @@ export class UsersService {
     if (media.masterId !== userId) throw new ForbiddenException("Ruxsat yo'q");
     await this.prisma.masterMedia.delete({ where: { id } });
     return { success: true };
+  }
+
+  /** Streaming lookup for GET /media/master/:id — same public-by-uuid trust
+   * model as OrdersService.getMediaFile (Beta Blocker Sprint: admin needs to
+   * view a master's uploaded certification via a plain <img> tag). */
+  async getMasterMediaFile(id: string) {
+    const media = await this.prisma.masterMedia.findUnique({ where: { id } });
+    if (!media) throw new NotFoundException('Media topilmadi');
+    return { stream: this.storage.createReadStream(media.objectKey), mime: media.mime ?? 'application/octet-stream' };
   }
 
   // ── Addresses ──

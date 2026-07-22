@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 
-const GREEN = new Set(['ACTIVE', 'VERIFIED', 'CLOSED', 'COMPLETED', 'APPROVED', 'SUCCEEDED', 'REWARDED', 'PREMIUM']);
+const GREEN = new Set(['ACTIVE', 'VERIFIED', 'CLOSED', 'COMPLETED', 'APPROVED', 'SUCCEEDED', 'REWARDED', 'PREMIUM', 'REFUNDED']);
 const AMBER = new Set(['PENDING', 'SEARCHING', 'ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS', 'UNDER_REVIEW', 'TRIAL', 'PROCESSING', 'OPEN']);
 const RED = new Set([
   'SUSPENDED',

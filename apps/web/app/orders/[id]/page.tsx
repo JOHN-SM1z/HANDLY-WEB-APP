@@ -16,7 +16,7 @@ import { OrderStatusBadge } from '@/components/order/order-status-badge';
 import { Alert } from '@/components/ui/alert';
 import { Badge, Rating } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, CheckIcon, MapPinIcon, SparkleIcon, VideoIcon } from '@/components/ui/icons';
+import { CalendarIcon, CheckIcon, MapPinIcon, PhoneIcon, SparkleIcon, VideoIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError } from '@/lib/api';
@@ -38,6 +38,7 @@ const PAYMENT_STATUS_LABEL: Record<PaymentStatus, { labelUz: string; variant: 'g
   SUCCEEDED: { labelUz: "To'landi", variant: 'green' },
   FAILED: { labelUz: 'Amalga oshmadi', variant: 'red' },
   CANCELLED: { labelUz: 'Bekor qilindi', variant: 'gray' },
+  REFUNDED: { labelUz: 'Qaytarildi', variant: 'blue' },
 };
 
 export default function OrderDetailPage() {
@@ -322,6 +323,16 @@ export default function OrderDetailPage() {
                 </div>
                 <Rating value={order.master.ratingAvg.toFixed(2)} className="mt-0.5 text-xs" />
               </div>
+              {/* Beta Blocker Sprint — minimal contact channel (tel: link,
+                  not a chat system). order.master only ever reaches the
+                  customer once ASSIGNED, so this is never shown earlier. */}
+              <a
+                href={`tel:${order.master.phone}`}
+                aria-label="Ustaga qo'ng'iroq qilish"
+                className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-primary-soft text-primary-soft-fg"
+              >
+                <PhoneIcon width={16} height={16} />
+              </a>
             </div>
           )}
 

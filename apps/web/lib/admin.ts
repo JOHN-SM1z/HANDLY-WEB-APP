@@ -2,6 +2,7 @@ import type {
   AdminAnalyticsOverviewDto,
   AdminOrderDetailDto,
   AdminOrderListPage,
+  AdminPaymentResolveInput,
   AdminSupportLookupDto,
   AdminUserDetailDto,
   AdminUserListPage,
@@ -11,6 +12,7 @@ import type {
   GuaranteeClaimDecisionInput,
   GuaranteeClaimDto,
   OrderStatus,
+  PaymentDto,
   ServiceTier,
   VerificationDecisionInput,
   VerificationRecordDto,
@@ -41,6 +43,9 @@ export interface AdminOrderListParams {
   status?: OrderStatus;
   categoryId?: string;
   serviceTier?: ServiceTier;
+  /** Beta Blocker Sprint — "every order for this user." */
+  customerId?: string;
+  masterId?: string;
   dateFrom?: string;
   dateTo?: string;
   lat?: number;
@@ -78,10 +83,24 @@ export const adminApi = {
   verifications: {
     list: (status?: string) =>
       api.get<
-        Array<{ id: string; masterId: string; masterPhone: string; status: string; note: string | null; createdAt: string }>
+        Array<{
+          id: string;
+          masterId: string;
+          masterPhone: string;
+          status: string;
+          note: string | null;
+          certifications: Array<{ id: string; url: string; caption: string | null }>;
+          createdAt: string;
+        }>
       >(`/admin/verifications${toQuery({ status })}`),
     decide: (id: string, body: VerificationDecisionInput) =>
       api.post<VerificationRecordDto>(`/admin/verifications/${id}/decide`, body, true),
+  },
+  payments: {
+    /** Manual resolution foundation (Beta Blocker Sprint) — no real payment-
+     * provider reversal, just an audited status change + customer notification. */
+    resolve: (id: string, body: AdminPaymentResolveInput) =>
+      api.post<PaymentDto>(`/admin/payments/${id}/resolve`, body, true),
   },
   guaranteeClaims: {
     list: (status?: string) =>

@@ -25,10 +25,17 @@ export class AdminSupportService {
     const found = await this.prisma.user.findUnique({ where: { phone } });
     if (!found) throw new NotFoundException('Foydalanuvchi topilmadi');
 
+    // Beta Blocker Sprint fix: Payment has no masterId column (it's keyed by
+    // customerId only, per its own model) — looking up a MASTER by
+    // `customerId: found.id` always returned zero rows regardless of their
+    // real earnings. A master's payments are the ones for orders assigned
+    // to them, same join PaymentsService.getMasterEarnings already uses.
+    const paymentsWhere = found.role === 'MASTER' ? { order: { masterId: found.id } } : { customerId: found.id };
+
     const [user, payments, penaltyHistory, referralSummary] = await Promise.all([
       this.adminUsers.detail(found.id),
       this.prisma.payment.findMany({
-        where: { customerId: found.id },
+        where: paymentsWhere,
         orderBy: { createdAt: 'desc' },
         take: 20,
       }),
@@ -44,6 +51,9 @@ export class AdminSupportService {
         method: p.method,
         status: p.status,
         amount: p.amount,
+        failureReason: p.failureReason,
+        resolutionNote: p.resolutionNote,
+        resolvedAt: p.resolvedAt?.toISOString() ?? null,
         createdAt: p.createdAt.toISOString(),
       })),
       penalties: penaltyHistory

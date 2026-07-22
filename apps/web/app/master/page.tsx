@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OfferDto } from '@handly/contracts';
@@ -9,7 +10,7 @@ import { OnlineToggle } from '@/components/master/online-toggle';
 import { RouteTimeline, type TimelineItem } from '@/components/master/route-timeline';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CameraIcon, CheckIcon, DropletIcon } from '@/components/ui/icons';
+import { CameraIcon, CheckIcon, DropletIcon, PhoneIcon } from '@/components/ui/icons';
 import { Logo } from '@/components/ui/logo';
 import { Rating } from '@/components/ui/badge';
 import { TextField } from '@/components/ui/text-field';
@@ -90,6 +91,7 @@ function initialsOf(fullName: string | null, phone: string): string {
  */
 export default function MasterDashboardPage() {
   const { ready, user } = useRequireAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState<number | null>(null);
   const [showCompleteForm, setShowCompleteForm] = useState(false);
@@ -197,10 +199,6 @@ export default function MasterDashboardPage() {
       void invalidateCurrentJob();
     },
     onError: (err) => setJobError(err instanceof ApiError ? err.message : 'Xatolik yuz berdi'),
-  });
-  const submitVerification = useMutation({
-    mutationFn: () => verificationApi.submit(),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['master', 'verification'] }),
   });
   const upgradeSubscription = useMutation({
     mutationFn: () => subscriptionsApi.upgrade(),
@@ -472,15 +470,30 @@ export default function MasterDashboardPage() {
                 {verification?.note || "Tasdiqlangan usta ko'proq buyurtma oladi"}
               </p>
             </div>
-            <Button
-              size="sm"
-              loading={submitVerification.isPending}
-              onClick={() => submitVerification.mutate()}
-            >
-              Yuborish
+            <Button size="sm" onClick={() => router.push('/master/onboarding')}>
+              To&apos;ldirish
             </Button>
           </div>
         )}
+        {/* Beta Blocker Sprint: skills/service area are what dispatch actually
+            requires to ever offer this master a job — surfaced separately
+            from verification status since a VERIFIED-but-incomplete profile
+            (e.g. seeded directly) would otherwise never see any prompt. */}
+        {profile.verificationStatus !== 'UNVERIFIED' &&
+          profile.verificationStatus !== 'REJECTED' &&
+          (profile.skills.length === 0 || profile.serviceAreas.length === 0) && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-warning-bg bg-warning-bg px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-warning-fg">Profil to&apos;liq emas</p>
+                <p className="mt-0.5 text-xs text-warning-fg opacity-80">
+                  Xizmat turi va ish hududini belgilamaguningizcha buyurtma ololmaysiz.
+                </p>
+              </div>
+              <Button size="sm" onClick={() => router.push('/master/onboarding')}>
+                To&apos;ldirish
+              </Button>
+            </div>
+          )}
 
         {subscription && !subscription.isPremiumActive && (
           <div className="flex items-center justify-between gap-3 rounded-lg border border-primary bg-primary-soft px-4 py-3">
@@ -533,6 +546,25 @@ export default function MasterDashboardPage() {
             <div className="rounded-lg border border-border-tertiary bg-surface px-4 py-6 text-center text-sm text-content-muted shadow-card">
               Hozircha tayinlangan ish yo&apos;q.
             </div>
+          )}
+          {/* Beta Blocker Sprint — minimal contact channel: a tel: link, not
+              a chat system. Only ever rendered once currentJob.customer is
+              populated by the API, which itself only happens at ASSIGNED+. */}
+          {currentJob?.customer && (
+            <a
+              href={`tel:${currentJob.customer.phone}`}
+              className="mt-3 flex items-center gap-3 rounded-lg border border-border-tertiary bg-surface px-4 py-3 shadow-card transition-colors hover:bg-background-secondary"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-primary-soft-fg">
+                <PhoneIcon width={18} height={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-content-primary">
+                  {currentJob.customer.fullName ?? 'Mijoz'}
+                </p>
+                <p className="text-xs text-content-muted">Qo&apos;ng&apos;iroq qilish</p>
+              </div>
+            </a>
           )}
           <input
             ref={evidenceInputRef}

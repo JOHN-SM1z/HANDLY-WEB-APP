@@ -33,9 +33,8 @@ import { TrustService } from '../trust/trust.service';
 import { VerificationService } from '../verification/verification.service';
 import { UsersService } from './users.service';
 
-const mediaSchema = z.object({
+const mediaQuerySchema = z.object({
   kind: z.enum(['CERTIFICATION', 'PORTFOLIO']),
-  objectKey: z.string().min(1).max(300),
   caption: z.string().max(200).optional(),
 });
 
@@ -68,12 +67,23 @@ export class MasterController {
     return this.users.updateMasterProfile(userId, dto);
   }
 
+  /** Multipart upload (real bytes, not a client-supplied objectKey) — same
+   * shape as OrdersController.addMedia/MasterController.addJobMedia below. */
   @Post('media')
-  addMedia(
+  @HttpCode(201)
+  async addMedia(
     @CurrentUser('id') userId: string,
-    @Body(new ZodValidationPipe(mediaSchema)) dto: z.infer<typeof mediaSchema>,
+    @Query(new ZodValidationPipe(mediaQuerySchema)) query: z.infer<typeof mediaQuerySchema>,
+    @Req() req: FastifyRequest,
   ) {
-    return this.users.addMasterMedia(userId, dto);
+    const mp = await (
+      req as FastifyRequest & {
+        file: (opts?: unknown) => Promise<{ toBuffer(): Promise<Buffer>; mimetype: string } | undefined>;
+      }
+    ).file();
+    if (!mp) throw new BadRequestException('Fayl yuborilmadi (multipart/form-data, field: file)');
+    const buffer = await mp.toBuffer();
+    return this.users.addMasterMedia(userId, { kind: query.kind, buffer, mime: mp.mimetype, caption: query.caption });
   }
 
   @Delete('media/:id')

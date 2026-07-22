@@ -2,6 +2,7 @@ import type {
   MasterAvailabilityDto,
   MasterAvailabilityUpdate,
   MasterProfileDto,
+  MasterProfileUpdate,
   OfferDto,
   OrderDto,
   OrderListPage,
@@ -12,8 +13,35 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v
 
 export const masterApi = {
   getProfile: () => api.get<MasterProfileDto>('/me/master'),
+  updateProfile: (body: MasterProfileUpdate) => api.patch<MasterProfileDto>('/me/master', body),
   setAvailability: (body: MasterAvailabilityUpdate) =>
     api.patch<MasterAvailabilityDto>('/me/master/availability', body),
+
+  /** Multipart upload of a certification/portfolio photo — bypasses the
+   * JSON-only `api` client (same pattern as uploadJobMedia below). */
+  async uploadMedia(
+    kind: 'CERTIFICATION' | 'PORTFOLIO',
+    file: File,
+    caption?: string,
+  ): Promise<{ id: string; kind: string; objectKey: string; caption: string | null }> {
+    const form = new FormData();
+    form.append('file', file);
+    const qs = new URLSearchParams({ kind, ...(caption ? { caption } : {}) });
+    const token = getAccessToken();
+    const res = await fetch(`${BASE_URL}/me/master/media?${qs.toString()}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      credentials: 'include',
+      body: form,
+    });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      const message = (data.detail as string) || (data.title as string) || 'Yuklashda xatolik';
+      throw new ApiError(res.status, message, data.errors as never);
+    }
+    return data as unknown as { id: string; kind: string; objectKey: string; caption: string | null };
+  },
+  deleteMedia: (id: string) => api.del<{ success: boolean }>(`/me/master/media/${id}`),
   getCurrentOffer: () => api.get<OfferDto | null>('/me/master/offers/current'),
   acceptOffer: (dispatchId: string) =>
     api.post<void>(`/me/master/offers/${dispatchId}/accept`, undefined, true),

@@ -7,6 +7,8 @@ export const PaymentStatus = {
   SUCCEEDED: 'SUCCEEDED',
   FAILED: 'FAILED',
   CANCELLED: 'CANCELLED',
+  /** Beta Blocker Sprint — manual admin resolution, not a real provider reversal. */
+  REFUNDED: 'REFUNDED',
 } as const;
 export const paymentStatusSchema = z.enum([
   PaymentStatus.PENDING,
@@ -14,6 +16,7 @@ export const paymentStatusSchema = z.enum([
   PaymentStatus.SUCCEEDED,
   PaymentStatus.FAILED,
   PaymentStatus.CANCELLED,
+  PaymentStatus.REFUNDED,
 ]);
 export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
 
@@ -65,10 +68,25 @@ export interface PaymentDto {
   taxAmount: number;
   masterNetAmount: number;
   failureReason: string | null;
+  /** Beta Blocker Sprint — set once an admin closes the loop on this
+   * payment (refunded or not); null until then. */
+  resolutionNote: string | null;
+  resolvedAt: string | null;
   createdAt: string;
   succeededAt: string | null;
   failedAt: string | null;
 }
+
+/** Admin manual-resolution action (Beta Blocker Sprint) — no real payment-
+ * provider reversal call, just a documented foundation: mark the payment
+ * refunded (only valid from SUCCEEDED) or record the issue as resolved
+ * without changing status, always with a reason and always notifying the
+ * customer. */
+export const adminPaymentResolveSchema = z.object({
+  refund: z.boolean(),
+  note: z.string().trim().min(3).max(500),
+});
+export type AdminPaymentResolveInput = z.infer<typeof adminPaymentResolveSchema>;
 
 export interface PaymentListPage {
   items: PaymentDto[];

@@ -23,6 +23,7 @@ export type AddressCreate = z.infer<typeof addressCreateSchema>;
  */
 export const masterProfileUpdateSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
+  avatarUrl: z.string().url().optional(),
   experienceYears: z.number().int().min(0).max(70),
   bio: z.string().trim().max(1000).optional(),
   skills: z.array(z.string().uuid()).max(20).default([]),
@@ -47,6 +48,7 @@ export type MasterProfileUpdate = z.infer<typeof masterProfileUpdateSchema>;
 
 export interface MasterProfileDto {
   fullName: string | null;
+  avatarUrl: string | null;
   experienceYears: number;
   bio: string | null;
   verificationStatus: VerificationStatus;

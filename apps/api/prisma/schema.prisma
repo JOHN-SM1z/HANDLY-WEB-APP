@@ -141,6 +141,10 @@ enum NotificationType {
   PENALTY_ISSUED
   REFERRAL_REWARDED
   ORDER_CANCELLED_BY_MASTER
+  // Beta Blocker Sprint — one type covers both refund and no-refund
+  // resolution outcomes, distinguished by the notification body text
+  // (same shape as GUARANTEE_CLAIM_DECIDED covering approve/reject).
+  PAYMENT_RESOLVED
 }
 
 // ─────────────────────────── Identity ───────────────────────────
@@ -188,6 +192,7 @@ model MasterProfile {
   userId             String             @id @db.Uuid
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   fullName           String?
+  avatarUrl          String?
   experienceYears    Int                @default(0)
   bio                String?
   verificationStatus VerificationStatus @default(UNVERIFIED)
@@ -259,6 +264,7 @@ model MasterMedia {
   master        MasterProfile   @relation(fields: [masterId], references: [userId], onDelete: Cascade)
   kind          MasterMediaKind
   objectKey     String
+  mime          String?
   caption       String?
   adminApproved Boolean         @default(false)
   createdAt     DateTime        @default(now())
@@ -477,6 +483,9 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+  // Beta Blocker Sprint — manual admin resolution foundation, no real
+  // provider reversal call yet (see PaymentsService.resolve).
+  REFUNDED
 }
 
 // Which rail the customer picked. Only MOCK is wired to a real provider
@@ -508,6 +517,13 @@ model Payment {
   // for the same transaction is a no-op, not a double-settle.
   providerRef   String?   @unique
   failureReason String?
+  // Beta Blocker Sprint — manual resolution foundation (admin-triggered,
+  // no real payment-provider reversal call). resolutionNote/resolvedAt are
+  // set whenever an admin closes the loop on a payment issue, whether or
+  // not it results in a REFUNDED status change.
+  resolutionNote    String?
+  resolvedByAdminId String?   @db.Uuid
+  resolvedAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   succeededAt   DateTime?

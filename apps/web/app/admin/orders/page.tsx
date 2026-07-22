@@ -2,7 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { StatusBadge } from '@/components/admin/status-badge';
 import { AppHeader } from '@/components/app-header';
 import { Alert } from '@/components/ui/alert';
@@ -19,13 +20,18 @@ const STATUS_OPTIONS = [
   ...Object.values(OrderStatus).map((s) => ({ value: s, label: s })),
 ];
 
-export default function AdminOrdersPage() {
+function AdminOrdersInner() {
   const { ready, user } = useRequireAuth(Role.ADMIN);
   const [status, setStatus] = useState('');
+  // Beta Blocker Sprint — "every order for this user," reachable from a
+  // customer/master detail page or the support lookup tool via a query param.
+  const searchParams = useSearchParams();
+  const customerId = searchParams.get('customerId') ?? undefined;
+  const masterId = searchParams.get('masterId') ?? undefined;
 
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['admin', 'orders', status],
-    queryFn: () => adminApi.orders.list({ status: (status || undefined) as never }),
+    queryKey: ['admin', 'orders', status, customerId, masterId],
+    queryFn: () => adminApi.orders.list({ status: (status || undefined) as never, customerId, masterId }),
     enabled: Boolean(user),
   });
 
@@ -46,6 +52,14 @@ export default function AdminOrdersPage() {
       <AppHeader title="Buyurtmalar" backHref="/admin" />
 
       <div className="flex flex-1 flex-col gap-3 px-5 py-5">
+        {(customerId || masterId) && (
+          <div className="flex items-center justify-between rounded-lg bg-info-bg px-3 py-2 text-xs text-info-fg">
+            <span>{customerId ? 'Mijoz buyurtmalari' : 'Usta buyurtmalari'} bo&apos;yicha filtrlangan</span>
+            <Link href="/admin/orders" className="font-medium underline-offset-2 hover:underline">
+              Tozalash
+            </Link>
+          </div>
+        )}
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-content-primary">Holat bo&apos;yicha filtr</span>
           <select
@@ -107,5 +121,21 @@ export default function AdminOrdersPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[100dvh] items-center justify-center">
+          <div className="animate-pulse">
+            <Logo size={44} />
+          </div>
+        </main>
+      }
+    >
+      <AdminOrdersInner />
+    </Suspense>
   );
 }

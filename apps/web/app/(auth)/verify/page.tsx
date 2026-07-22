@@ -49,7 +49,12 @@ function VerifyInner() {
     try {
       const res = await authApi.verifyOtp(parsed.data);
       setSession(res.user, res.tokens.accessToken);
-      router.replace('/home');
+      // Beta Blocker Sprint: a master used to land on /home (the generic
+      // customer "create an order" screen) with no path back to their own
+      // dashboard except a link buried on /profile. The dashboard itself
+      // (not this redirect) is what prompts an incomplete profile to
+      // continue to /master/onboarding — see app/master/page.tsx.
+      router.replace(res.user.role === 'MASTER' ? '/master' : '/home');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Kod tasdiqlanmadi');
       setCode('');
