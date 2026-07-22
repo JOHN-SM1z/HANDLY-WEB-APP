@@ -57,40 +57,43 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-// Delta assertions use >= rather than exact equality: this codebase's test
-// files run concurrently (node:test's default), and other suites create/
-// delete real Order rows in the same shared table while this one runs — the
-// same reason referrals-integration.test.ts asserts `totalReferred >= 1`
-// instead of an exact count. A >= delta still proves the metric actually
-// moved by at least what this test created, without going flaky under
-// concurrent writers it doesn't control.
+// Scoped by a tight dateFrom window (captured right before each fixture is
+// created) rather than a before/after snapshot of the whole table: this
+// codebase's test files run concurrently (node:test's default), and other
+// suites create/delete real Order rows throughout their own runs — a plain
+// before/after delta can still go flaky if a concurrent test's cleanup
+// happens to shrink the global count in between (confirmed: this exact
+// flake occurred with a >= delta once other suites' deleteMany calls
+// overlapped). Scoping to "orders created from this instant onward" makes
+// the assertion immune to anything created/deleted before that instant,
+// which is everything except a near-impossible same-millisecond collision.
 test('ordersCreated increases by at least the number of orders created', async () => {
-  const before = await analytics.overview({});
+  const from = new Date().toISOString();
   const order = await prisma.order.create({
     data: { customerId, categoryId, description: 'analytics test order', status: 'DRAFT' },
   });
   orderIds.push(order.id);
-  const after = await analytics.overview({});
-  assert.ok(after.ordersCreated >= before.ordersCreated + 1);
+  const after = await analytics.overview({ dateFrom: from });
+  assert.ok(after.ordersCreated >= 1);
 });
 
 test('ordersCompleted counts only CLOSED orders', async () => {
-  const before = await analytics.overview({});
+  const from = new Date().toISOString();
   const closed = await prisma.order.create({
     data: { customerId, categoryId, description: 'closed order', status: 'CLOSED' },
   });
   orderIds.push(closed.id);
-  const after = await analytics.overview({});
-  assert.ok(after.ordersCompleted >= before.ordersCompleted + 1);
+  const after = await analytics.overview({ dateFrom: from });
+  assert.ok(after.ordersCompleted >= 1);
 });
 
 test('ordersCancelled counts both CANCELLED_BY_CUSTOMER and CANCELLED_BY_MASTER', async () => {
-  const before = await analytics.overview({});
+  const from = new Date().toISOString();
   const c1 = await prisma.order.create({ data: { customerId, categoryId, description: 'x', status: 'CANCELLED_BY_CUSTOMER' } });
   const c2 = await prisma.order.create({ data: { customerId, categoryId, description: 'x', status: 'CANCELLED_BY_MASTER' } });
   orderIds.push(c1.id, c2.id);
-  const after = await analytics.overview({});
-  assert.ok(after.ordersCancelled >= before.ordersCancelled + 2);
+  const after = await analytics.overview({ dateFrom: from });
+  assert.ok(after.ordersCancelled >= 2);
 });
 
 test('revenueTotal sums only SUCCEEDED payments', async () => {

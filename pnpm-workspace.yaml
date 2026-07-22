@@ -2,23 +2,44 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Batch 4 dependency-security pass (`pnpm audit --audit-level=high`): force
+# transitive deps with a patched CVE fix up to the patched version, without
+# waiting on every upstream (fastify/ajv/next/@sentry) to bump their own
+# declared range first. Both fast-uri major lines appear in the tree (3.x via
+# fastify's ajv-based schema compiler, 4.x via a different ajv consumer) so
+# both need their own override — see `pnpm why fast-uri` / `pnpm why sharp`.
+overrides:
+  fast-uri@^3.0.0: ">=3.1.4"
+  fast-uri@^4.0.0: ">=4.1.1"
+  "@fastify/ajv-compiler>fast-uri": ">=4.1.1"
+  "ajv>fast-uri": ">=4.1.1"
+  sharp: ">=0.35.0"
+  postcss: ">=8.5.10"
+  uuid: ">=11.1.1"
+
 allowBuilds:
   '@firebase/util': true
   '@prisma/client': true
   '@prisma/engines': true
+  '@sentry/cli': true
   argon2: true
   esbuild: true
   msgpackr-extract: true
   prisma: true
   protobufjs: true
   sharp: true
+  unrs-resolver: true
 
 # Standard pnpm (>=10) approval list so a fresh clone builds native/codegen deps
-# without an interactive `pnpm approve-builds` prompt.
+# without an interactive `pnpm approve-builds` prompt. @sentry/cli's postinstall
+# only downloads its own CLI binary (used for source-map upload); unrs-resolver
+# (eslint-config-next's module resolver) builds a native addon — both harmless.
 onlyBuiltDependencies:
   - "@prisma/client"
   - "@prisma/engines"
+  - "@sentry/cli"
   - argon2
   - esbuild
   - prisma
   - sharp
+  - unrs-resolver

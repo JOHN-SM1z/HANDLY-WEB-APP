@@ -5,8 +5,37 @@ export const envSchema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3001),
   WEB_ORIGIN: z.string().url().default('http://localhost:3000'),
 
+  // Passed straight to Fastify's `trustProxy` option (main.ts) — controls
+  // which hop(s) req.ip trusts an X-Forwarded-For value from. 'loopback'
+  // (the default) is correct for local dev and for a reverse proxy on the
+  // exact same network namespace as the app. In production, THIS MUST MATCH
+  // YOUR REAL DEPLOYMENT TOPOLOGY: if nginx/your LB reaches the app over a
+  // Docker bridge network rather than true loopback, set this to that
+  // bridge's subnet (e.g. "172.18.0.0/16" — check `docker network inspect`
+  // for the real subnet) or your LB's CIDR. Getting this wrong in either
+  // direction is a real security gap: too permissive (e.g. "true"/trust-all)
+  // makes req.ip spoofable via a client-supplied X-Forwarded-For header
+  // (this drives both the Batch 4 per-IP rate limiter's key and
+  // Session.ip) — found and fixed during Batch 4's final security audit,
+  // see docs/runbooks/deployment.md. Too restrictive just makes every
+  // request look like it came from the proxy itself (safe, but useless for
+  // rate-limiting/audit purposes) — verify this against your actual
+  // topology before launch, don't assume the default is correct.
+  TRUSTED_PROXY: z.string().default('loopback'),
+
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
+
+  // Error monitoring (Batch 4) — "assists, never gates": unset in dev/test/CI
+  // is a fully supported, complete no-op (see infra/monitoring/error-monitoring.ts).
+  SENTRY_DSN: z.string().default(''),
+
+  // Global per-IP rate limit (Batch 4, @fastify/rate-limit, Redis-backed so it
+  // holds across multiple API instances). This is a volumetric/DoS backstop
+  // on top of — not instead of — the OTP/login-specific Redis counters above,
+  // which are already stricter and purpose-built for those two endpoints.
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
 
   JWT_ACCESS_SECRET: z.string().min(8, 'JWT_ACCESS_SECRET must be at least 8 chars'),
   JWT_ACCESS_TTL: z.string().default('15m'),

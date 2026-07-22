@@ -22,6 +22,7 @@ import {
   utcIsoToSlot,
 } from '@handly/contracts';
 import { AppConfig } from '../../infra/config/app-config';
+import { matchesMagicBytes } from '../../infra/storage/magic-bytes';
 import { PrismaService } from '../../infra/prisma/prisma.service';
 import { STORAGE_PROVIDER, type StorageProvider } from '../../infra/storage/storage-provider';
 import { AiService } from '../ai/ai.service';
@@ -185,6 +186,13 @@ export class OrdersService {
     const isVideo = file.mime in VIDEO_MIMES;
     if (!isPhoto && !isVideo) {
       throw new UnsupportedMediaTypeException('Faqat rasm (JPEG/PNG/WebP/HEIC) yoki video (MP4/MOV/WebM)');
+    }
+    // The client-declared Content-Type is only a label — verify the actual
+    // file bytes match it before trusting it for storage/serving. See
+    // infra/storage/magic-bytes.ts for why this matters even with the
+    // allow-list + nosniff header already in place.
+    if (!matchesMagicBytes(file.buffer, file.mime)) {
+      throw new UnsupportedMediaTypeException("Fayl mazmuni e'lon qilingan turga mos kelmadi");
     }
     const maxBytes = (isPhoto ? this.config.env.UPLOAD_MAX_PHOTO_MB : this.config.env.UPLOAD_MAX_VIDEO_MB) * 1024 * 1024;
     if (file.buffer.length > maxBytes) {

@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
+
 /**
  * Last-resort fallback if the root layout itself throws — must render its
  * own <html>/<body> per Next.js's requirement, and can't lean on the design
@@ -7,7 +10,11 @@
  * error.tsx above handles every ordinary page-level error; this is the
  * rarer case underneath it.
  */
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <html lang="uz">
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif' }}>

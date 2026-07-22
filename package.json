@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@11.14.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "scripts": {
     "dev": "turbo run dev",
@@ -21,8 +21,12 @@
     "docker:logs": "docker compose -f infra/docker/docker-compose.yml logs -f"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "autocannon": "^8.0.0",
+    "eslint": "^9.39.5",
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.65.0"
   }
 }

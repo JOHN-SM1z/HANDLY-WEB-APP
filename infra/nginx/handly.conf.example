@@ -1,0 +1,95 @@
+# Handly — example nginx reverse-proxy config (Batch 4).
+#
+# Terminates TLS, proxies /api/* to the API container and everything else to
+# the web container, and forwards the WebSocket upgrade Socket.IO needs at
+# /api/v1/ws (see apps/api/src/modules/realtime — namespace "/ws" behind the
+# api/v1 global prefix). Adjust upstream ports/hosts to match your actual
+# docker-compose.prod.yml service names/ports, or your cloud LB's target group.
+#
+# TLS: get a real certificate before using this in production — Let's
+# Encrypt via certbot's nginx plugin is the simplest path for a single-host
+# deployment: `certbot --nginx -d yourdomain.example`. This file assumes
+# certbot has already provisioned /etc/letsencrypt/live/yourdomain.example/.
+
+upstream handly_api {
+    server 127.0.0.1:3001;
+}
+
+upstream handly_web {
+    server 127.0.0.1:3000;
+}
+
+server {
+    listen 80;
+    server_name yourdomain.example;
+    # Redirect all plain HTTP to HTTPS — never serve the app over plain HTTP
+    # in production (JWT bearer tokens, refresh cookies, PINFL — all of this
+    # needs TLS).
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.example;
+
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.example/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.example/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    # HSTS — safe to set here since TLS termination is happening at this
+    # layer (the app itself deliberately does not set this — see main.ts's
+    # security-headers comment: "HSTS is normally the reverse proxy/CDN's
+    # job once TLS terminates there, not the app's").
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+
+    client_max_body_size 60m; # UPLOAD_MAX_VIDEO_MB default is 50MB — leave headroom
+
+    # Never let a public reverse proxy expose these without additional
+    # protection — metrics/detailed health leak internal topology. Restrict
+    # to your monitoring network (an internal IP allowlist, or don't proxy
+    # them publicly at all and scrape over a private network/VPN instead).
+    location /api/v1/metrics {
+        allow 10.0.0.0/8;   # replace with your real internal/monitoring CIDR
+        deny all;
+        proxy_pass http://handly_api;
+    }
+    location /api/v1/health/ready {
+        allow 10.0.0.0/8;
+        deny all;
+        proxy_pass http://handly_api;
+    }
+
+    # Socket.IO — must forward the WebSocket upgrade headers, and needs a
+    # much longer read timeout than a normal HTTP request (long-lived
+    # connection, not request/response).
+    location /api/v1/ws/ {
+        proxy_pass http://handly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 3600s;
+    }
+
+    location /api/ {
+        proxy_pass http://handly_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://handly_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

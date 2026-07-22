@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { HealthController } from './health/health.controller';
 import { AppConfigModule } from './infra/config/app-config';
 import { CryptoModule } from './infra/crypto/crypto.module';
+import { AppLoggingModule } from './infra/logging/logging.module';
+import { MetricsModule } from './infra/metrics/metrics.module';
 import { PaymentModule } from './infra/payment/payment.module';
 import { PrismaModule } from './infra/prisma/prisma.module';
 import { RedisModule } from './infra/redis/redis.module';
@@ -30,6 +32,8 @@ import { VerificationModule } from './modules/verification/verification.module';
 
 @Module({
   imports: [
+    AppLoggingModule,
+    MetricsModule,
     AppConfigModule,
     PrismaModule,
     AuditModule,

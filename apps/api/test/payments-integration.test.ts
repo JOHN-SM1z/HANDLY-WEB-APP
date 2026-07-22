@@ -24,7 +24,7 @@ const stubNotifications = { notify: async () => {} };
 const stubReferrals = { rewardOnFirstPayment: async () => {} };
 
 const alwaysFailProvider: PaymentProvider = {
-  async charge(input: ChargeInput): Promise<ChargeResult> {
+  async charge(_input: ChargeInput): Promise<ChargeResult> {
     return { success: false, providerRef: `MOCK-FAIL-${randomUUID()}`, failureReason: 'insufficient_funds (test)' };
   },
 };

@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import type { JwtPayload } from '../../common/auth/auth-user';
+import { MetricsService } from '../../infra/metrics/metrics.service';
 
 const userRoom = (userId: string): string => `user:${userId}`;
 
@@ -26,7 +27,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @WebSocketServer()
   private server!: Server;
 
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly metrics: MetricsService,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     const token = client.handshake.auth?.token as string | undefined;
@@ -38,6 +42,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       const payload = await this.jwt.verifyAsync<JwtPayload>(token);
       client.data.userId = payload.sub;
       await client.join(userRoom(payload.sub));
+      this.metrics.socketConnections.inc();
     } catch {
       client.disconnect(true);
     }
@@ -45,6 +50,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   handleDisconnect(client: Socket): void {
     this.logger.debug(`Socket disconnected: ${client.id}`);
+    this.metrics.socketConnections.dec();
   }
 
   emitToUser(userId: string, event: string, payload: unknown): void {

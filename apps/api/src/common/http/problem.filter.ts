@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { captureError } from '../../infra/monitoring/error-monitoring';
 
 interface ProblemBody {
   type: string;
@@ -52,6 +53,17 @@ export class ProblemExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       detail = exception.message;
+      // Fastify plugins (e.g. @fastify/rate-limit) throw a plain Error with a
+      // `statusCode` property rather than a NestJS HttpException — recognize
+      // that convention so a 429/413/etc. from below Nest's routing layer
+      // doesn't get flattened into a misleading 500. Confirmed live: without
+      // this, a rate-limited request returned 500 (and got sent to error
+      // monitoring as an "unexpected" server error) instead of 429.
+      const withStatus = exception as Error & { statusCode?: unknown };
+      if (typeof withStatus.statusCode === 'number' && withStatus.statusCode >= 400 && withStatus.statusCode < 600) {
+        status = withStatus.statusCode;
+        title = httpTitle(status);
+      }
     }
 
     if (status >= 500) {
@@ -59,6 +71,9 @@ export class ProblemExceptionFilter implements ExceptionFilter {
         `${request.method} ${request.url} -> ${status}: ${detail ?? title}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+      // Only genuinely unexpected (5xx) errors go to error monitoring — a
+      // no-op when SENTRY_DSN is unset (dev/test/CI need no credentials).
+      captureError(exception, { method: request.method, url: request.url });
       // Never leak internal details to clients.
       detail = undefined;
       title = 'Internal Server Error';

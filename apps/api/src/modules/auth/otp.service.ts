@@ -53,7 +53,7 @@ export class OtpService {
     try {
       remaining = await this.redis.ttl(`otp:cooldown:${purpose}:${phone}`);
     } catch {
-      remaining = 0; // Redis unavailable — fall through and try to (re)issue.
+      // Redis unavailable — remaining stays 0, falls through to (re)issue.
     }
     if (remaining > 0) return remaining;
 

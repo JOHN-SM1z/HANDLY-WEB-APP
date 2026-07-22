@@ -1,0 +1,107 @@
+# Handly production stack (Batch 4).
+#
+# This is a reference single-host compose file, not a Kubernetes replacement —
+# fine for an early-beta deployment on one VM behind a reverse proxy (see
+# docs/runbooks/deployment.md for the nginx example + TLS notes). It reuses
+# the same postgres/redis images and healthchecks as infra/docker/docker-
+# compose.yml (dev stack) and adds the api/web application services plus
+# restart policies and resource limits appropriate for a small production box.
+#
+# Usage: docker compose -f infra/docker/docker-compose.yml \
+#          -f infra/docker/docker-compose.prod.yml up -d
+# (layers on top of the dev file rather than duplicating the db/redis
+# definitions — same override pattern Docker Compose is designed for.)
+services:
+  postgres:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2g
+        reservations:
+          memory: 512m
+
+  redis:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512m
+        reservations:
+          memory: 128m
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    image: handly-api:latest
+    container_name: handly-api
+    restart: always
+    # Nest's app.enableShutdownHooks() (main.ts) runs onModuleDestroy across
+    # every module on SIGTERM — closes the Prisma pool, BullMQ worker/queue
+    # connections, and the Socket.IO server cleanly. Default stop_grace_period
+    # (10s) is enough for those; raise it if a slow job type is added later.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env.production
+    # Bound to loopback only — nginx (docs/runbooks/deployment.md) is the
+    # sole intended entry point. Publishing on 0.0.0.0 here (the Docker
+    # default for "host:container" without an explicit bind IP) would let
+    # anyone reach the API directly on this port, bypassing nginx's TLS
+    # termination and its IP-allowlist on /metrics + /health/ready entirely
+    # — found during Batch 4's final security audit, alongside the related
+    # TRUSTED_PROXY fix (main.ts), which also assumes this exact topology.
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - handly_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/v1/health/ready',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1g
+        reservations:
+          memory: 256m
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    image: handly-web:latest
+    container_name: handly-web
+    restart: always
+    depends_on:
+      - api
+    env_file:
+      - ../../.env.production
+    # Loopback-only — see the api service's identical port-binding comment above.
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512m
+        reservations:
+          memory: 128m
+
+volumes:
+  handly_uploads:

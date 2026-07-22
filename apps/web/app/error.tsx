@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import * as Sentry from '@sentry/nextjs';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 
@@ -16,6 +17,8 @@ export default function GlobalErrorPage({
   useEffect(() => {
     // eslint-disable-next-line no-console
     console.error(error);
+    // No-op if Sentry was never initialized (NEXT_PUBLIC_SENTRY_DSN unset).
+    Sentry.captureException(error);
   }, [error]);
 
   return (

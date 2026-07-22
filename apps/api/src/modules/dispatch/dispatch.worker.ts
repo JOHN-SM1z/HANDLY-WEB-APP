@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { Worker, type Job } from 'bullmq';
 import type Redis from 'ioredis';
+import { captureError } from '../../infra/monitoring/error-monitoring';
 import { BULLMQ_CONNECTION } from '../../infra/queue/queue.module';
 import { DISPATCH_QUEUE_NAME, DispatchJobName, type OfferExpiryJobData } from '../../infra/queue/queue.constants';
 import { DispatchService } from './dispatch.service';
@@ -40,6 +41,11 @@ export class DispatchWorker implements OnModuleInit, OnModuleDestroy {
     );
     this.worker.on('failed', (job, err) => {
       this.logger.error(`Dispatch job ${job?.id} (${job?.name}) failed: ${err.message}`);
+      // Only reported once BullMQ's own retries (queue.module.ts) are
+      // exhausted for this job — a mid-retry failure isn't yet an incident.
+      if (!job || job.attemptsMade >= (job.opts.attempts ?? 1)) {
+        captureError(err, { jobId: job?.id, jobName: job?.name, queue: DISPATCH_QUEUE_NAME });
+      }
     });
   }
 
