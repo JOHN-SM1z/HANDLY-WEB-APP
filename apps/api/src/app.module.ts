@@ -9,9 +9,11 @@ import { StorageModule } from './infra/storage/storage.module';
 import { QueueModule } from './infra/queue/queue.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { DispatchModule } from './modules/dispatch/dispatch.module';
+import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 import { GuaranteeModule } from './modules/guarantee/guarantee.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -30,6 +32,7 @@ import { VerificationModule } from './modules/verification/verification.module';
   imports: [
     AppConfigModule,
     PrismaModule,
+    AuditModule,
     RedisModule,
     QueueModule,
     CryptoModule,
@@ -52,6 +55,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     ReferralsModule,
     SubscriptionsModule,
     AnalyticsModule,
+    FeatureFlagsModule,
     AdminModule,
   ],
   controllers: [HealthController],

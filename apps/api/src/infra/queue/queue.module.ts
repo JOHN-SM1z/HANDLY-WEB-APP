@@ -29,7 +29,17 @@ export const DISPATCH_QUEUE = Symbol('DISPATCH_QUEUE');
       useFactory: (connection: Redis): Queue =>
         new Queue(DISPATCH_QUEUE_NAME, {
           connection,
-          defaultJobOptions: { removeOnComplete: 500, removeOnFail: 1000 },
+          defaultJobOptions: {
+            removeOnComplete: 500,
+            removeOnFail: 1000,
+            // Batch 3 reliability fix: a transient Redis/DB blip used to drop an
+            // offer-expiry job permanently (no retry existed at all). Bounded
+            // exponential backoff — each job is also idempotent on the DB side
+            // (handleOfferExpiry no-ops if the dispatch already moved on), so a
+            // retry can never double-cascade.
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+          },
         }),
       inject: [BULLMQ_CONNECTION],
     },

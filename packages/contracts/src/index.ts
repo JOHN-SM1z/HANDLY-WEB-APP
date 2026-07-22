@@ -12,3 +12,4 @@ export * from './penalty';
 export * from './referral';
 export * from './subscription';
 export * from './analytics';
+export * from './admin';

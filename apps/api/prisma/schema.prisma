@@ -428,6 +428,9 @@ model Order {
   // job" check) also filters status='ASSIGNED' — composite replaces the old
   // masterId-only index since it covers both shapes (leftmost-prefix).
   @@index([masterId, status])
+  // Batch 3 admin order list is unscoped (no customerId/masterId filter),
+  // so it needs its own sort index rather than relying on the composite ones above.
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -734,4 +737,39 @@ model MasterSubscription {
   updatedAt        DateTime            @updatedAt
 
   @@map("master_subscriptions")
+}
+
+// ─────────────────────────── Admin operations (Batch 3) ───────────────────────────
+// Append-only. Written by every admin mutation (suspend/restore, verification/
+// guarantee decide, feature-flag change) — actor + action + before/after, per
+// ARCHITECTURE §Admin surface's "every admin mutation in append-only audit_log
+// with actor + before/after." No FK to User: an admin's audit trail must
+// survive that admin account being deleted/anonymized later.
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String   @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// Configuration/feature-flag foundation only (per Batch 3 scope) — nothing
+// reads these to gate behavior yet. Flat key/value rather than the full
+// versioned-JSONB rules engine in ARCHITECTURE §9.5, which is a later,
+// larger system once a real flag actually needs runtime consumption.
+model FeatureFlag {
+  key         String   @id
+  enabled     Boolean  @default(false)
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@map("feature_flags")
 }

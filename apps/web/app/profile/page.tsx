@@ -84,6 +84,16 @@ export default function ProfilePage() {
           <ChevronRightIcon width={16} height={16} className="text-content-muted" />
         </Link>
 
+        {user.role === 'ADMIN' && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 rounded-xl border border-border-tertiary bg-surface px-4 py-3 shadow-card"
+          >
+            <span className="flex-1 text-sm font-medium text-content-primary">Admin panel</span>
+            <ChevronRightIcon width={16} height={16} className="text-content-muted" />
+          </Link>
+        )}
+
         {user.role === 'MASTER' && (
           <>
             <Link
