@@ -38,3 +38,8 @@ export function useSocketEvent<T = unknown>(event: string, handler: (payload: T)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event]);
 }
+
+/** Live GPS — fire-and-forget; the server silently drops it if there's no active order. */
+export function emitLocation(lat: number, lng: number): void {
+  getSocket().emit('location:update', { lat, lng });
+}

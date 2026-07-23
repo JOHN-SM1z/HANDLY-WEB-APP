@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { Prisma } from '@prisma/client';
 import { captureError } from '../../infra/monitoring/error-monitoring';
 
 interface ProblemBody {
@@ -51,6 +52,17 @@ export class ProblemExceptionFilter implements ExceptionFilter {
           errors = obj.errors as ProblemBody['errors'];
         }
       }
+    } else if (exception instanceof Prisma.PrismaClientKnownRequestError && exception.code === 'P2002') {
+      // A unique-constraint violation reaching this far means a DB-level
+      // guard caught a race that an application-level pre-check missed
+      // (e.g. two concurrent creates for the same unique row) — a benign,
+      // expected conflict, not an unexpected server error. Report it as a
+      // clean 409 instead of falling through to the generic 500 branch
+      // below, and skip Sentry (nothing actionable — the constraint did its
+      // job).
+      status = HttpStatus.CONFLICT;
+      title = 'Conflict';
+      detail = 'Bu amal allaqachon bajarilgan';
     } else if (exception instanceof Error) {
       detail = exception.message;
       // Fastify plugins (e.g. @fastify/rate-limit) throw a plain Error with a

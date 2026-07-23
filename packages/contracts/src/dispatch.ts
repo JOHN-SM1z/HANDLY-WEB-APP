@@ -104,3 +104,18 @@ export interface OrderUpdatedEvent {
   orderId: string;
   status: OrderStatus;
 }
+
+// ─────────────── Live GPS tracking (socket-only, no persistence) ───────────────
+/** Client → server, emitted on the `location:update` socket event. */
+export const locationUpdateInputSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+export type LocationUpdateInput = z.infer<typeof locationUpdateInputSchema>;
+
+/** Server → the counterpart, pushed over the `location:updated` socket event. */
+export interface LocationUpdatedEvent {
+  orderId: string;
+  lat: number;
+  lng: number;
+}

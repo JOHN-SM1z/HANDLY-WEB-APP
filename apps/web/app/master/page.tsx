@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { OfferDto } from '@handly/contracts';
 import { BookingRequestCard } from '@/components/master/booking-request-card';
+import { LiveTrackingMap } from '@/components/map/live-tracking-map';
 import { OnlineToggle } from '@/components/master/online-toggle';
 import { RouteTimeline, type TimelineItem } from '@/components/master/route-timeline';
 import { Alert } from '@/components/ui/alert';
@@ -74,6 +75,8 @@ const JOB_STATUS_META: Record<string, string> = {
   COMPLETED: 'Mijoz tasdiqlashini kutmoqda',
 };
 
+const LIVE_TRACKING_STATUSES = ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'];
+
 function initialsOf(fullName: string | null, phone: string): string {
   if (fullName) {
     const parts = fullName.trim().split(/\s+/);
@@ -90,7 +93,7 @@ function initialsOf(fullName: string | null, phone: string): string {
  * the master's real lifetime rating + completed-jobs count.
  */
 export default function MasterDashboardPage() {
-  const { ready, user } = useRequireAuth();
+  const { ready, user } = useRequireAuth('MASTER');
   const router = useRouter();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -565,6 +568,17 @@ export default function MasterDashboardPage() {
                 <p className="text-xs text-content-muted">Qo&apos;ng&apos;iroq qilish</p>
               </div>
             </a>
+          )}
+          {currentJob && (
+            <LiveTrackingMap
+              active={LIVE_TRACKING_STATUSES.includes(currentJob.status)}
+              initialCounterpartPosition={
+                currentJob.latitude != null && currentJob.longitude != null
+                  ? { latitude: currentJob.latitude, longitude: currentJob.longitude }
+                  : null
+              }
+              counterpartLabel={currentJob.customer?.fullName ?? 'Mijoz'}
+            />
           )}
           <input
             ref={evidenceInputRef}

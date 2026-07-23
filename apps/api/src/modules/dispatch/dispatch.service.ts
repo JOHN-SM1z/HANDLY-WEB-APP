@@ -218,13 +218,19 @@ export class DispatchService {
   private async failSearch(orderId: string, reason: string): Promise<void> {
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order || !canTransition(order.status as OrderStatus, OrderStatus.EXPIRED)) return;
+    // Guarded on order.status — this can otherwise race OrdersService.cancel()
+    // (both read SEARCHING and can both pass their own canTransition check),
+    // writing two contradictory statusHistory rows and firing a search-failed
+    // notification at a customer who already cancelled. Same CAS pattern used
+    // for every other order-status write in this codebase.
+    const result = await this.prisma.order.updateMany({
+      where: { id: orderId, status: order.status },
+      data: { status: OrderStatus.EXPIRED },
+    });
+    if (result.count === 0) return; // lost the race to a concurrent transition — no-op
     this.logger.log(`Dispatch exhausted for order ${orderId}: ${reason}`);
-    await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.EXPIRED,
-        statusHistory: { create: { fromStatus: order.status, toStatus: OrderStatus.EXPIRED, note: reason } },
-      },
+    await this.prisma.orderStatusHistory.create({
+      data: { orderId, fromStatus: order.status, toStatus: OrderStatus.EXPIRED, note: reason },
     });
     this.realtime.emitToUser(order.customerId, 'order:updated', { orderId, status: OrderStatus.EXPIRED });
     await this.notifications.notify(

@@ -14,7 +14,7 @@ const PLAN_LABEL: Record<string, string> = { FREE: 'Bepul', PREMIUM: 'Premium' }
 
 /** Real-data-only master analytics (Batch 2) — no fake/demo values. */
 export default function MasterAnalyticsPage() {
-  const { ready, user } = useRequireAuth();
+  const { ready, user } = useRequireAuth('MASTER');
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['master', 'analytics'],

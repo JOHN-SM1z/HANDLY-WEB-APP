@@ -363,20 +363,22 @@ export class OrdersService {
     if (!canTransition(order.status as OrderStatus, OrderStatus.CANCELLED_BY_CUSTOMER)) {
       throw new ConflictException('Bu buyurtmani bekor qilib bo‘lmaydi');
     }
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: OrderStatus.CANCELLED_BY_CUSTOMER,
-        cancelledAt: new Date(),
-        statusHistory: {
-          create: {
-            fromStatus: order.status,
-            toStatus: OrderStatus.CANCELLED_BY_CUSTOMER,
-            actorId: customerId,
-          },
-        },
-      },
-      include: FULL_INCLUDE,
+    // Guarded on order.status — a cancel can otherwise race
+    // DispatchService.failSearch() (both read SEARCHING and can both pass
+    // their own canTransition check) and end up writing two contradictory
+    // statusHistory rows. Same CAS pattern as transitionByMaster/completeService.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: { status: OrderStatus.CANCELLED_BY_CUSTOMER, cancelledAt: new Date() },
+      });
+      if (result.count !== 1) {
+        throw new ConflictException('Bu buyurtmani bekor qilib bo‘lmaydi');
+      }
+      await tx.orderStatusHistory.create({
+        data: { orderId, fromStatus: order.status, toStatus: OrderStatus.CANCELLED_BY_CUSTOMER, actorId: customerId },
+      });
+      return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: FULL_INCLUDE });
     });
     return this.toDto(updated);
   }

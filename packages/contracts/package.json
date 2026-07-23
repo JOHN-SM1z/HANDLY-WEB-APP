@@ -2,7 +2,7 @@
   "name": "@handly/contracts",
   "version": "0.0.0",
   "private": true,
-  "type": "commonjs",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -14,8 +14,8 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "build": "node scripts/ensure-dist-package-json.cjs && tsc -p tsconfig.json",
+    "dev": "node scripts/ensure-dist-package-json.cjs && tsc -p tsconfig.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist"
   },

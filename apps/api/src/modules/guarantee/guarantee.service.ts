@@ -58,8 +58,13 @@ export class GuaranteeService {
       throw new ConflictException('Bu soʻrov allaqachon yopilgan');
     }
 
-    const updated = await this.prisma.guaranteeClaim.update({
-      where: { id: claimId },
+    // Guarded on status still matching what we just read — two concurrent
+    // decide() calls on the same claim would otherwise both pass the
+    // pre-check above and both write, sending two decision notifications
+    // for one claim. Same CAS-via-updateMany pattern used throughout this
+    // codebase (e.g. OrdersService's job-execution transitions).
+    const result = await this.prisma.guaranteeClaim.updateMany({
+      where: { id: claimId, status: claim.status },
       data: {
         status: approve ? 'APPROVED' : 'REJECTED',
         decidedBy: adminId,
@@ -67,6 +72,10 @@ export class GuaranteeService {
         resolutionNote,
       },
     });
+    if (result.count !== 1) {
+      throw new ConflictException('Bu soʻrov allaqachon yopilgan');
+    }
+    const updated = await this.prisma.guaranteeClaim.findUniqueOrThrow({ where: { id: claimId } });
 
     await this.notifications.notify(
       claim.customerId,

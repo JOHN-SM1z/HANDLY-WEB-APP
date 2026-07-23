@@ -12,6 +12,7 @@ import {
   SERVICE_TIER_INFO,
 } from '@handly/contracts';
 import { AppHeader } from '@/components/app-header';
+import { LiveTrackingMap } from '@/components/map/live-tracking-map';
 import { OrderStatusBadge } from '@/components/order/order-status-badge';
 import { Alert } from '@/components/ui/alert';
 import { Badge, Rating } from '@/components/ui/badge';
@@ -30,6 +31,7 @@ import { useRequireAuth } from '@/lib/use-require-auth';
 
 const CANCELABLE: OrderStatus[] = ['DRAFT', 'PRICED', 'SEARCHING', 'ASSIGNED', 'EN_ROUTE'];
 const ASSIGNED_STATUSES: OrderStatus[] = ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS', 'COMPLETED', 'CLOSED'];
+const LIVE_TRACKING_STATUSES: OrderStatus[] = ['ASSIGNED', 'EN_ROUTE', 'IN_PROGRESS'];
 const PAYABLE_STATUSES: OrderStatus[] = ['COMPLETED', 'CLOSED'];
 const PAYMENT_METHODS: PaymentMethod[] = ['MOCK', 'CLICK', 'PAYME', 'UZUM'];
 const PAYMENT_STATUS_LABEL: Record<PaymentStatus, { labelUz: string; variant: 'gray' | 'blue' | 'green' | 'red' }> = {
@@ -335,6 +337,11 @@ export default function OrderDetailPage() {
               </a>
             </div>
           )}
+
+          <LiveTrackingMap
+            active={LIVE_TRACKING_STATUSES.includes(order.status)}
+            counterpartLabel={order.master?.fullName ?? 'Usta'}
+          />
 
           {order.status === 'EN_ROUTE' && (
             <div className="rounded-xl border border-info-bg bg-info-bg p-4 text-center">

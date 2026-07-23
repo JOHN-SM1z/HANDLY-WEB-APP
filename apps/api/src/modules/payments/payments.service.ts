@@ -165,12 +165,21 @@ export class PaymentsService {
   async resolve(paymentId: string, adminId: string, refund: boolean, note: string): Promise<PaymentDto> {
     const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment) throw new NotFoundException("To'lov topilmadi");
+    if (payment.resolvedAt) {
+      throw new ConflictException("Bu to'lov allaqachon hal qilingan");
+    }
     if (refund && payment.status !== 'SUCCEEDED') {
-      throw new ConflictException('Faqat muvaffaqiyatli to\'lovni qaytarish mumkin');
+      throw new ConflictException("Faqat muvaffaqiyatli to'lovni qaytarish mumkin");
     }
 
-    const updated = await this.prisma.payment.update({
-      where: { id: paymentId },
+    // Guarded on resolvedAt still being null — a double-click/retry on
+    // "resolve" would otherwise both pass the pre-checks above and both
+    // write, overwriting each other's resolutionNote/resolvedByAdminId and
+    // sending two notifications for one action. Same CAS-via-updateMany
+    // pattern used throughout this codebase (e.g. OrdersService's
+    // job-execution transitions).
+    const result = await this.prisma.payment.updateMany({
+      where: { id: paymentId, resolvedAt: null },
       data: {
         ...(refund ? { status: 'REFUNDED' as const } : {}),
         resolutionNote: note,
@@ -178,6 +187,10 @@ export class PaymentsService {
         resolvedAt: new Date(),
       },
     });
+    if (result.count !== 1) {
+      throw new ConflictException("Bu to'lov allaqachon hal qilingan");
+    }
+    const updated = await this.prisma.payment.findUniqueOrThrow({ where: { id: paymentId } });
 
     await this.notifications.notify(
       payment.customerId,

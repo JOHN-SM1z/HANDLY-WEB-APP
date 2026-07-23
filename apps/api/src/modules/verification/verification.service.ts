@@ -13,27 +13,36 @@ export class VerificationService {
 
   /** Master submits (or resubmits after a rejection) a verification request. */
   async submit(masterId: string, note?: string): Promise<VerificationRecordDto> {
-    const master = await this.prisma.masterProfile.findUnique({ where: { userId: masterId } });
-    if (!master) throw new NotFoundException('Usta profili topilmadi');
-    if (master.verificationStatus === 'VERIFIED') {
-      throw new ConflictException('Siz allaqachon tasdiqlangansiz');
-    }
-    const pending = await this.prisma.verification.findFirst({
-      where: { masterId, status: 'PENDING' },
-    });
-    if (pending) {
-      throw new ConflictException("Ko'rib chiqilayotgan so'rovingiz bor");
-    }
+    const record = await this.prisma.$transaction(async (tx) => {
+      // Lock the master's own profile row so two concurrent submits (e.g. a
+      // double-tap on "submit for verification") can't both pass the "no
+      // pending request" check below before either commits its INSERT —
+      // Verification has no DB-level uniqueness on (masterId, status) to
+      // prevent that otherwise. Same lock-then-check-then-write shape as
+      // PaymentsService.initiate's duplicate-payment guard.
+      await tx.$executeRaw`SELECT "userId" FROM master_profiles WHERE "userId" = ${masterId}::uuid FOR UPDATE`;
 
-    const [record] = await this.prisma.$transaction([
-      this.prisma.verification.create({
+      const master = await tx.masterProfile.findUnique({ where: { userId: masterId } });
+      if (!master) throw new NotFoundException('Usta profili topilmadi');
+      if (master.verificationStatus === 'VERIFIED') {
+        throw new ConflictException('Siz allaqachon tasdiqlangansiz');
+      }
+      const pending = await tx.verification.findFirst({
+        where: { masterId, status: 'PENDING' },
+      });
+      if (pending) {
+        throw new ConflictException("Ko'rib chiqilayotgan so'rovingiz bor");
+      }
+
+      const created = await tx.verification.create({
         data: { masterId, provider: 'MANUAL', status: 'PENDING', note },
-      }),
-      this.prisma.masterProfile.update({
+      });
+      await tx.masterProfile.update({
         where: { userId: masterId },
         data: { verificationStatus: 'PENDING' },
-      }),
-    ]);
+      });
+      return created;
+    });
     return this.toDto(record);
   }
 
@@ -65,16 +74,25 @@ export class VerificationService {
     }
 
     const newStatus = approve ? 'VERIFIED' : 'REJECTED';
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.verification.update({
-        where: { id: verificationId },
+    // Guarded on status still being PENDING — two concurrent decide() calls
+    // on the same request (double-submit, or two admins on a shared queue)
+    // would otherwise both pass the pre-check above and both write, leaving
+    // masterProfile.verificationStatus as whichever transaction committed
+    // last and sending two approve/reject notifications for one request.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.verification.updateMany({
+        where: { id: verificationId, status: 'PENDING' },
         data: { status: newStatus, decidedBy: adminId, decidedAt: new Date(), note: note ?? record.note },
-      }),
-      this.prisma.masterProfile.update({
+      });
+      if (result.count !== 1) {
+        throw new ConflictException('Bu soʻrov allaqachon koʻrib chiqilgan');
+      }
+      await tx.masterProfile.update({
         where: { userId: record.masterId },
         data: { verificationStatus: newStatus },
-      }),
-    ]);
+      });
+      return tx.verification.findUniqueOrThrow({ where: { id: verificationId } });
+    });
 
     await this.notifications.notify(
       record.masterId,

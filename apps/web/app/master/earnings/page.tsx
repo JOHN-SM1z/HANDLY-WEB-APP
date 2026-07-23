@@ -14,7 +14,7 @@ import { useRequireAuth } from '@/lib/use-require-auth';
 
 /** Master's earnings history + revenue tracking (M5). */
 export default function MasterEarningsPage() {
-  const { ready, user } = useRequireAuth();
+  const { ready, user } = useRequireAuth('MASTER');
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['master', 'earnings'],

@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 // Derive the API's http(s) + ws(s) origins from the same env var the app
 // itself calls (lib/api.ts / lib/socket.ts), so the CSP never drifts out of
 // sync with what the app actually connects to across dev/staging/prod.
@@ -18,6 +20,22 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
   }
 }
 
+// Live GPS map (real-time GPS feature) — same "only widen CSP when the
+// feature is actually configured" shape as Sentry above. Yandex Maps JS API
+// loads its bootstrap script from api-maps.yandex.ru and fetches map tiles
+// from the *.maps.yandex.net subdomain family; both are only reachable once
+// NEXT_PUBLIC_YANDEX_MAPS_API_KEY is set (empty in dev is a no-op — the map
+// component renders a "not configured" placeholder instead of a live map).
+const yandexMapsScriptSrc = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY
+  ? ' https://api-maps.yandex.ru'
+  : '';
+const yandexMapsConnectSrc = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY
+  ? ' https://api-maps.yandex.ru https://*.maps.yandex.net'
+  : '';
+const yandexMapsImgSrc = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY
+  ? ' https://*.maps.yandex.net'
+  : '';
+
 // 'unsafe-inline' on script/style is a pragmatic default for a Next.js App
 // Router app without nonce-based CSP middleware (Next injects small inline
 // bootstrap/hydration scripts and Tailwind/font inline styles). Tightening
@@ -25,11 +43,11 @@ if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
 // it requires a middleware.ts issuing a per-request nonce end-to-end.
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${yandexMapsScriptSrc}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob:${yandexMapsImgSrc}`,
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigin} ${apiWsOrigin}${sentryConnectSrc}`,
+  `connect-src 'self' ${apiOrigin} ${apiWsOrigin}${sentryConnectSrc}${yandexMapsConnectSrc}`,
   `media-src 'self' ${apiOrigin}`,
   "object-src 'none'",
   "base-uri 'self'",
@@ -68,4 +86,12 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Required, not cosmetic: without this wrapper, Sentry's Next.js SDK has no
+// way to tell webpack which of its own submodules are server-only — the
+// client bundle ends up pulling in @sentry/node's Node-only instrumentation
+// (require-in-the-middle, @opentelemetry/instrumentation) alongside it,
+// which references __dirname/process.binding and throws when actually
+// executed in a browser, breaking client hydration on every page. Source-map
+// upload (org/project/authToken) is left unset — with no SENTRY_AUTH_TOKEN
+// the plugin skips the upload step rather than failing the build.
+export default withSentryConfig(nextConfig, { silent: true });

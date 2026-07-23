@@ -13,7 +13,7 @@ import { useRequireAuth } from '@/lib/use-require-auth';
 
 /** Master's own resolved (COMPLETED/CLOSED) job history (M4). */
 export default function MasterJobHistoryPage() {
-  const { ready, user } = useRequireAuth();
+  const { ready, user } = useRequireAuth('MASTER');
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['master', 'jobs'],

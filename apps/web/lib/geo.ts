@@ -27,3 +27,32 @@ export function getCurrentPosition(): Promise<GeoPosition> {
     );
   });
 }
+
+/**
+ * Continuous tracking for live GPS sharing (order EN_ROUTE/IN_PROGRESS).
+ * Wraps watchPosition — the browser itself decides callback frequency based
+ * on movement/accuracy, so no manual polling interval is needed. Returns an
+ * unsubscribe function; callers must call it on unmount (React Strict Mode's
+ * double-effect would otherwise leave a stray watch running).
+ */
+export function watchPosition(
+  onUpdate: (pos: GeoPosition) => void,
+  onError: (message: string) => void,
+): () => void {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    onError('Geolokatsiya bu qurilmada mavjud emas');
+    return () => {};
+  }
+  const id = navigator.geolocation.watchPosition(
+    (pos) => onUpdate({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+    (err) => {
+      const message =
+        err.code === err.PERMISSION_DENIED
+          ? "Joylashuvga ruxsat berilmadi. Jonli kuzatish uchun brauzer sozlamalaridan ruxsat bering"
+          : "Joylashuvni aniqlab bo'lmadi";
+      onError(message);
+    },
+    { enableHighAccuracy: true, maximumAge: 15_000, timeout: 20_000 },
+  );
+  return () => navigator.geolocation.clearWatch(id);
+}

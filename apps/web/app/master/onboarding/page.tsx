@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { masterProfileUpdateSchema } from '@handly/contracts';
 import { AppHeader } from '@/components/app-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -36,7 +37,12 @@ export default function MasterOnboardingPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const {
+    data: profile,
+    isLoading: profileLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useQuery({
     queryKey: ['master', 'profile'],
     queryFn: masterApi.getProfile,
     enabled: Boolean(user),
@@ -85,20 +91,12 @@ export default function MasterOnboardingPage() {
 
   const submitOnboarding = useMutation({
     mutationFn: async () => {
-      let avatarUrl = profile?.avatarUrl ?? undefined;
-      if (avatarFile) {
-        const uploaded = await masterApi.uploadMedia('PORTFOLIO', avatarFile);
-        avatarUrl = `${BASE_URL}/media/master/${uploaded.id}`;
-      }
-      for (const file of certFiles) {
-        await masterApi.uploadMedia('CERTIFICATION', file);
-      }
       if (areaLat == null || areaLng == null) {
         throw new ApiError(400, "Xizmat hududini belgilang (joylashuvni aniqlang)");
       }
-      await masterApi.updateProfile({
+
+      const payload = {
         fullName: fullName.trim(),
-        avatarUrl,
         experienceYears: Number(experienceYears) || 0,
         bio: bio.trim() || undefined,
         // isSelfEmployed/pinfl are tax-registration details out of scope for
@@ -115,7 +113,25 @@ export default function MasterOnboardingPage() {
             radiusM: Number(radiusM),
           },
         ],
-      });
+      };
+      // Same bounds the server enforces (masterProfileUpdateSchema) — catch
+      // an out-of-range value (e.g. radius/experience typed past the HTML
+      // input's min/max hint) before uploading any files, not just after a
+      // round-trip to the API.
+      const parsed = masterProfileUpdateSchema.omit({ avatarUrl: true, pinfl: true }).safeParse(payload);
+      if (!parsed.success) {
+        throw new ApiError(400, parsed.error.issues[0]?.message ?? "Ma'lumotlar noto'g'ri kiritildi");
+      }
+
+      let avatarUrl = profile?.avatarUrl ?? undefined;
+      if (avatarFile) {
+        const uploaded = await masterApi.uploadMedia('PORTFOLIO', avatarFile);
+        avatarUrl = `${BASE_URL}/media/master/${uploaded.id}`;
+      }
+      for (const file of certFiles) {
+        await masterApi.uploadMedia('CERTIFICATION', file);
+      }
+      await masterApi.updateProfile({ ...parsed.data, avatarUrl });
       if (!profile?.verificationStatus || profile.verificationStatus === 'UNVERIFIED' || profile.verificationStatus === 'REJECTED') {
         await verificationApi.submit();
       }
@@ -150,6 +166,17 @@ export default function MasterOnboardingPage() {
         <div className="animate-pulse">
           <Logo size={44} />
         </div>
+      </main>
+    );
+  }
+
+  if (profileError) {
+    return (
+      <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-5 text-center">
+        <Alert>Profilni yuklab bo&apos;lmadi</Alert>
+        <Button variant="outline" onClick={() => void refetchProfile()}>
+          Qayta urinish
+        </Button>
       </main>
     );
   }

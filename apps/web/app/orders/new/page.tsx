@@ -7,6 +7,8 @@ import { categoriesApi } from '@/lib/categories';
 import { ordersApi } from '@/lib/orders';
 import { useOrderWizard } from '@/lib/wizard-store';
 import { useRequireAuth } from '@/lib/use-require-auth';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { StepDescription } from '@/components/order/step-description';
 import { StepSchedule } from '@/components/order/step-schedule';
@@ -20,6 +22,17 @@ function Splash() {
       <div className="animate-pulse">
         <Logo size={44} />
       </div>
+    </main>
+  );
+}
+
+function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center gap-3 px-5 text-center">
+      <Alert>Xizmat turlarini yuklab bo&apos;lmadi</Alert>
+      <Button variant="outline" onClick={onRetry}>
+        Qayta urinish
+      </Button>
     </main>
   );
 }
@@ -50,7 +63,11 @@ function NewOrderWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { data: categories } = useQuery({
+  const {
+    data: categories,
+    isError: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery({
     queryKey: ['categories'],
     queryFn: categoriesApi.list,
     enabled: Boolean(user),
@@ -66,7 +83,9 @@ function NewOrderWizard() {
     if (orderQuery.isError) reset();
   }, [orderQuery.isError, reset]);
 
-  if (!ready || !user || !categories) return <Splash />;
+  if (!ready || !user) return <Splash />;
+  if (categoriesError) return <ErrorScreen onRetry={() => void refetchCategories()} />;
+  if (!categories) return <Splash />;
 
   const order = orderQuery.data ?? null;
   const title = step === 1 ? 'Buyurtma yaratish' : step === 2 ? 'Vaqt tanlash' : 'Tasdiqlash';
