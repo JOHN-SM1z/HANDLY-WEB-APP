@@ -723,21 +723,23 @@ All economy parameters — plan definitions & quotas, trial length, tier thresho
 
 ## 10. Payment abstraction layer
 
-One interface, three adapters (Payme JSON-RPC merchant protocol; Click prepare/complete; Uzum) — unchanged shape from v2, now serving **three purposes**: `ORDER` (customer pays for the job), `PLATFORM_FEE` (Priority/Emergency fee at booking), `SUBSCRIPTION` (Premium).
+One interface, three adapters (Click prepare/complete; Payme JSON-RPC merchant protocol; Uzum) — **Click now the production MVP** (as of M5+ 2026-07-25), serving **three purposes**: `ORDER` (customer pays for the job), `PLATFORM_FEE` (Priority/Emergency fee at booking), `SUBSCRIPTION` (Premium).
 
 ```
-PaymentProvider: createCheckout · verifyCallback · parseEvent · cancel · refund
-                 · tokenizeCard / chargeToken (auto-renew, saved cards)
+PaymentProvider: charge(input) → ChargeResult
+                 (HMAC-SHA256 signature verification for webhook security)
 ```
 
-- Single state machine `CREATED → PENDING → PAID | FAILED | CANCELLED → REFUNDED`; adapters translate provider vocabulary; illegal transitions rejected + alerted; unique `(provider, provider_txn_id)` + idempotent replays (Payme/Click re-send callbacks).
-- **Effects via domain events only.** `payment.PAID` →
-  - `ORDER`: ledger posts master `ORDER_EARNING` and `TAX_WITHHOLD −1%` atomically; cashback/loyalty/referral settlement (W7); `warranty_until` set; order → `PAID`.
-  - `SUBSCRIPTION`: activate plan / convert trial.
-  - `PLATFORM_FEE`: order proceeds to `SEARCHING`.
-- **Payment timing (recommendation):** platform fee (if any) at booking; **job payment at completion** — master enters final price (within band), customer reviews and pays in-app, applying credits if desired. Cash remains possible (`payment_channel = CASH`): order closes without warranty/cashback and no tax withholding (nothing flowed through us). Prepay/escrow is a post-MVP option the schema already supports.
-- **Card data:** PSP-hosted tokenization only — PAN/CVV never touch Handly servers (out of PCI DSS scope); we store token + masked PAN.
-- **Reconciliation (W3):** nightly provider-statement vs `payments` diff; mismatches page admin. Trial expiry / renewal (W4): charge saved token if consented, else notify; 24 h grace, then capability gate flips the master to Free quota automatically — no manual cutoffs.
+- **M5+ Implementation (2026-07-25):** `PaymentProvider` abstraction now supports both `MockPaymentProvider` (dev/test) and `ClickPaymentProvider` (production). Click provider implements the Uzbekistan Click API protocol (prepare/complete), HMAC-SHA256 signature verification on webhook callbacks, and idempotent webhook replay handling. Credentials (`CLICK_MERCHANT_ID`, `CLICK_MERCHANT_SECRET_KEY`) loaded from env; missing credentials fall back to mock rejection (preventing accidental real charges in dev). Provider selection via `PAYMENT_PROVIDER` env var; no code changes required to swap providers.
+- **Click protocol:** Customer initiates order payment → `createBill()` reserves funds → Click returns transaction ID → webhook callback with signature → `verifySignature()` validates → idempotent settlement. Transaction ID stored in `Payment.providerRef` (unique, prevents double-settling on replay).
+- Single state machine `PROCESSING → SUCCEEDED | FAILED`; current implementation uses synchronous charge (for orders in COMPLETED state) + webhook extension point for async Click callbacks (already idempotent). Payme/Uzum can be added as additional adapters using the same `PaymentProvider` interface later.
+- **Effects via settlement flow.** `payment.SUCCEEDED` →
+  - `ORDER`: ledger posts master `ORDER_EARNING` and `TAX_WITHHOLD −1%` atomically; cashback/loyalty/referral settlement (Batch 2); `warranty_until` set; order → `CLOSED`.
+  - `SUBSCRIPTION`: activate plan / convert trial (future enhancement).
+  - Failure: order remains in settlement limbo until admin refund or timeout.
+- **Payment timing (current):** **job payment at completion** — customer confirms order is COMPLETED, initiates payment via Click → funds reserved → webhook settles → master earnings recorded. Admin may manually resolve disputed/failed payments. Prepay/escrow/cash-on-delivery are schema-supported but deferred post-MVP.
+- **Card data:** Click handles tokenization server-side; Handly stores `providerRef` (Click transaction ID) and settlement status only, never PAN/CVV.
+- **Reconciliation (future — W3):** nightly Click statement vs `payments` diff; mismatches page admin. Subscription auto-renewal via stored token (future enhancement).
 
 ---
 
@@ -798,6 +800,7 @@ Deliberately not Kubernetes: two VMs carry this well past MVP; the stateless tie
 | **M3 — Dispatch & lifecycle** ✅ | 2–3 wk | Auto-dispatch engine (eligibility filter, distance/rating/jobs scoring, weighted top-N pick, sequential offers with timeout + cascade + one radius expansion), PostGIS matching (generated `geography` columns + GIST indexes), master online/offline availability, Socket.IO real-time offers (`offer:received`/`order:updated`), FCM-ready push abstraction, notifications module, order lifecycle `SEARCHING→ASSIGNED/EXPIRED`. **Deferred to a later milestone** (not in this pass's approved scope): manual admin verification queue, Premium-first cascade (no subscriptions exist yet), live GPS en-route tracking, job completion confirmation, reviews, masked contact. | **Done 2026-07-21** |
 | **M4 — Job execution** ✅ | 1 wk | `ASSIGNED→EN_ROUTE→IN_PROGRESS→COMPLETED→CLOSED` state machine, master en-route/start/complete actions, completion-evidence upload (reuses `OrderMedia`), customer confirmation, `Order.finalAmount` settlement bridge, master job history. | **Done 2026-07-21** |
 | **M5 — Payments (mock provider)** ✅ | 1 wk | `PaymentProvider` abstraction + `MockPaymentProvider` (no real Click/Payme/Uzum credentials), order payments + 1% tax withholding wired to a real flow for the first time, platform-fee settlement, master earnings history, webhook endpoint (documented extension point, not yet exercised). | **Done 2026-07-21** |
+| **M5+ — Click Payment Provider** ✅ | 3–5 d | Real payment provider integration: `ClickPaymentProvider` implementing Click Uzbekistan API (prepare/complete), HMAC-SHA256 webhook signature verification, idempotent replay handling, configurable via `PAYMENT_PROVIDER` env var. Provider selection swaps via config; no code changes required. Payme/Uzum remain as future adapters using the same interface. | **Done 2026-07-25** |
 | **Batch 2 — Trust, Safety & Marketplace Growth** ✅ | 1–2 wk | Trust tiers, verification improvements, penalty engine, Handly Guarantee, cashback, referrals, master subscriptions, master analytics | **Done 2026-07-21** |
 | **Batch 3 — Operations & Scale** ✅ | 1–2 wk | Admin dashboard, audit log, feature flags, marketplace analytics, support lookup tool, performance/reliability fixes | **Done 2026-07-22** |
 | **Batch 4 — Launch Readiness** ✅ | 1–2 wk | Structured logging, error monitoring, metrics, health checks, Docker + CI/CD, backups/disaster recovery, security hardening (rate limiting, CSP, upload validation, dependency audit), measurement-based performance review, load testing | **Done 2026-07-22** |

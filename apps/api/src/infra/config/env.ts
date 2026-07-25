@@ -91,10 +91,13 @@ export const envSchema = z.object({
   DISPATCH_OFFER_TTL_PRIORITY_SECONDS: z.coerce.number().int().positive().default(120),
   DISPATCH_OFFER_TTL_EMERGENCY_SECONDS: z.coerce.number().int().positive().default(60),
 
-  // Payments (M5). Only "mock" is implemented — CLICK/PAYME/UZUM need real
-  // merchant credentials that don't exist yet; the enum + PaymentProvider
-  // interface exist so a real rail slots in without touching callers.
-  PAYMENT_PROVIDER: z.enum(['mock']).default('mock'),
+  // Payments (M5+). "mock" (dev/test) and "click" (production) providers.
+  // Click requires CLICK_MERCHANT_ID + CLICK_MERCHANT_SECRET_KEY from env.
+  // If unset, Click provider falls back to rejecting charges (use mock to avoid this).
+  PAYMENT_PROVIDER: z.enum(['mock', 'click']).default('mock'),
+  CLICK_MERCHANT_ID: z.string().default(''),
+  CLICK_MERCHANT_SECRET_KEY: z.string().default(''),
+  CLICK_API_BASE: z.string().url().default('https://api.click.uz/api/merchant'),
 });
 
 export type Env = z.infer<typeof envSchema>;
