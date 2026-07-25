@@ -1,0 +1,177 @@
+version: '3.9'
+
+services:
+  # PostgreSQL database — persistent storage for marketplace data
+  postgres:
+    image: postgres:16-alpine
+    container_name: handly-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-handly}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-handly}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-handly}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Redis — caching, sessions, real-time features (Socket.IO, rate limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: handly-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # API server — NestJS backend
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile.prod
+    container_name: handly-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Core
+      NODE_ENV: production
+      PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-handly}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-handly}
+      
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      
+      # Click Payment
+      PAYMENT_PROVIDER: click
+      CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID}
+      CLICK_MERCHANT_SECRET_KEY: ${CLICK_MERCHANT_SECRET_KEY}
+      CLICK_API_BASE: ${CLICK_API_BASE:-https://api.click.uz/api/merchant}
+      
+      # SMS (Eskiz)
+      SMS_PROVIDER: ${SMS_PROVIDER:-mock}
+      ESKIZ_API_BASE: ${ESKIZ_API_BASE:-https://notify.eskiz.uz/api}
+      ESKIZ_API_KEY: ${ESKIZ_API_KEY}
+      ESKIZ_FROM_NUMBER: ${ESKIZ_FROM_NUMBER:-4546}
+      
+      # Auth
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
+      
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      
+      # Monitoring
+      SENTRY_DSN: ${SENTRY_DSN}
+      
+      # Feature flags
+      FEATURE_GPS_TRACKING: ${FEATURE_GPS_TRACKING:-true}
+      FEATURE_WARRANTY: ${FEATURE_WARRANTY:-true}
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+  # Web frontend — Next.js served via Node
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile.prod
+    container_name: handly-web
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-https://api.handly.uz}
+      NEXT_PUBLIC_APP_NAME: Handly
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "10"
+
+  # Nginx reverse proxy + SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: handly-nginx
+    depends_on:
+      - api
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - letsencrypt_data:/etc/letsencrypt
+      - nginx_cache:/var/cache/nginx
+    environment:
+      DOMAIN: ${DOMAIN}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  letsencrypt_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  default:
+    name: handly-network
+    driver: bridge
